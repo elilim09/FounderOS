@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="ko">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FounderOS — 개인 작업실</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: rgba(30, 41, 59, 0.7);
+      --line: rgba(148, 163, 184, 0.2);
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --primary: #6366f1;
+      --accent: #22d3ee;
+      --success: #10b981;
+      --warn: #f59e0b;
+      --danger: #ef4444;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Inter, system-ui, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top, rgba(99, 102, 241, 0.2), transparent 40%),
+        var(--bg);
+      min-height: 100vh;
+    }
+
+    .wrap {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 28px 18px 48px;
+    }
+
+    .top {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 20px;
+      align-items: center;
+    }
+
+    .title h1 { margin: 0; font-size: 1.8rem; }
+    .title p { margin: 8px 0 0; color: var(--muted); }
+
+    .btn {
+      border: 1px solid var(--line);
+      background: rgba(15, 23, 42, 0.7);
+      color: var(--text);
+      border-radius: 10px;
+      padding: 10px 14px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .btn.primary { background: var(--primary); border-color: transparent; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 14px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 16px;
+      backdrop-filter: blur(10px);
+    }
+
+    .card h2 {
+      margin: 0 0 12px;
+      font-size: 1rem;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .kpi { grid-column: span 3; }
+    .wide { grid-column: span 6; }
+    .full { grid-column: span 12; }
+
+    .big-number { font-size: 1.6rem; font-weight: 800; }
+    .sub { color: var(--muted); font-size: 0.85rem; }
+
+    .row { display: flex; gap: 8px; flex-wrap: wrap; }
+    input, select, textarea {
+      width: 100%;
+      background: rgba(15, 23, 42, 0.8);
+      color: var(--text);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px;
+      font: inherit;
+    }
+
+    textarea { min-height: 76px; }
+
+    .list { display: flex; flex-direction: column; gap: 8px; max-height: 260px; overflow: auto; }
+    .item {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px;
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      align-items: flex-start;
+    }
+
+    .pill { padding: 3px 8px; border-radius: 999px; font-size: 0.75rem; }
+    .pill.todo { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
+    .pill.doing { background: rgba(99, 102, 241, 0.2); color: #a5b4fc; }
+    .pill.done { background: rgba(16, 185, 129, 0.2); color: #6ee7b7; }
+
+    .risk.low { color: #6ee7b7; }
+    .risk.mid { color: #fbbf24; }
+    .risk.high { color: #fca5a5; }
+
+    .hint { font-size: 0.8rem; color: var(--muted); margin-top: 10px; }
+
+    @media (max-width: 900px) {
+      .kpi, .wide { grid-column: span 12; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <div class="top">
+      <div class="title">
+        <h1>🛠️ FounderOS 개인 작업실</h1>
+        <p id="projectInfo">실제 실행을 위한 운영 대시보드입니다.</p>
+      </div>
+      <div class="row">
+        <button class="btn" id="resetWorkspace">초기화</button>
+        <a href="/" class="btn">설계 화면으로</a>
+      </div>
+    </div>
+
+    <section class="grid">
+      <article class="card kpi">
+        <h2><i class="fas fa-tasks"></i>실행률</h2>
+        <div class="big-number" id="taskProgress">0%</div>
+        <div class="sub" id="taskProgressSub">완료된 우선 작업 비율</div>
+      </article>
+      <article class="card kpi">
+        <h2><i class="fas fa-wallet"></i>런웨이</h2>
+        <div class="big-number" id="runway">0개월</div>
+        <div class="sub" id="runwaySub">현금 기준 생존 가능 기간</div>
+      </article>
+      <article class="card kpi">
+        <h2><i class="fas fa-user-check"></i>인터뷰</h2>
+        <div class="big-number" id="interviewCount">0건</div>
+        <div class="sub" id="interviewSub">고객 검증 기록</div>
+      </article>
+      <article class="card kpi">
+        <h2><i class="fas fa-triangle-exclamation"></i>핵심 리스크</h2>
+        <div class="big-number" id="riskCount">0건</div>
+        <div class="sub">높음/중간 위험 항목 수</div>
+      </article>
+
+      <article class="card wide">
+        <h2><i class="fas fa-list-check"></i>우선순위 작업 백로그</h2>
+        <div class="row" style="margin-bottom:8px;">
+          <input id="taskTitle" placeholder="예: 온보딩 화면 개선" />
+          <select id="taskStatus">
+            <option value="todo">할 일</option>
+            <option value="doing">진행중</option>
+            <option value="done">완료</option>
+          </select>
+          <button class="btn primary" id="addTask">추가</button>
+        </div>
+        <div class="list" id="taskList"></div>
+      </article>
+
+      <article class="card wide">
+        <h2><i class="fas fa-users"></i>고객 인터뷰 노트</h2>
+        <div class="row" style="margin-bottom:8px;">
+          <input id="interviewPerson" placeholder="인터뷰 대상 (예: 카페 사장 김OO)" />
+          <input id="interviewPain" placeholder="핵심 페인포인트" />
+          <button class="btn primary" id="addInterview">기록</button>
+        </div>
+        <div class="list" id="interviewList"></div>
+      </article>
+
+      <article class="card wide">
+        <h2><i class="fas fa-bullseye"></i>OKR 트래커</h2>
+        <div class="row" style="margin-bottom:8px;">
+          <input id="okrObjective" placeholder="Objective" />
+          <input id="okrKeyResult" placeholder="Key Result" />
+          <input id="okrProgress" type="number" min="0" max="100" placeholder="진척도(%)" />
+          <button class="btn primary" id="addOkr">추가</button>
+        </div>
+        <div class="list" id="okrList"></div>
+      </article>
+
+      <article class="card wide">
+        <h2><i class="fas fa-calculator"></i>자금 계획</h2>
+        <div class="row" style="margin-bottom:8px;">
+          <input id="cash" type="number" min="0" placeholder="보유 현금(원)" />
+          <input id="monthlyBurn" type="number" min="1" placeholder="월 소진 비용(원)" />
+          <input id="monthlyRevenue" type="number" min="0" placeholder="월 매출(원)" />
+          <button class="btn primary" id="saveFinance">계산</button>
+        </div>
+        <p class="hint">런웨이 = 보유현금 / (월소진-월매출, 최소 1원 처리).</p>
+      </article>
+
+      <article class="card full">
+        <h2><i class="fas fa-shield-heart"></i>리스크 레지스터</h2>
+        <div class="row" style="margin-bottom:8px;">
+          <input id="riskTitle" placeholder="리스크 항목 (예: 서버 비용 급증)" />
+          <select id="riskLevel">
+            <option value="low">낮음</option>
+            <option value="mid">중간</option>
+            <option value="high">높음</option>
+          </select>
+          <input id="riskMitigation" placeholder="대응 방안" />
+          <button class="btn primary" id="addRisk">추가</button>
+        </div>
+        <div class="list" id="riskList"></div>
+      </article>
+    </section>
+  </div>
+
+  <script type="module" src="/workspace.js"></script>
+</body>
+
+</html>

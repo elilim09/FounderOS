@@ -98,6 +98,17 @@ function esc(text) {
     .replaceAll(">", "&gt;");
 }
 
+function persistWorkspaceContext(payload = {}) {
+  const context = {
+    designId: currentDesignId,
+    startupName: val("startupName"),
+    targetCustomer: val("targetCustomer"),
+    generatedAt: new Date().toISOString(),
+    ...payload,
+  };
+  localStorage.setItem("founderos-workspace-context", JSON.stringify(context));
+}
+
 function setStep(n) {
   document.querySelectorAll(".progress-step").forEach((el) => {
     const step = Number(el.dataset.step);
@@ -443,6 +454,11 @@ buildBtn.addEventListener("click", async () => {
         <h3>프로젝트 파일이 생성되었습니다!</h3>
         <div class="dir-path">${esc(data.outputDirectory)}</div>
         <p>위 경로에서 결과물을 확인할 수 있습니다.</p>
+        <div style="margin-top: 16px;">
+          <button id="openWorkspaceBtn" class="btn btn-primary">
+            <i class="fas fa-door-open"></i> 개인 작업실 열기
+          </button>
+        </div>
       </div>
 
       <details class="expand-section" style="margin-bottom: 8px;">
@@ -458,6 +474,10 @@ buildBtn.addEventListener("click", async () => {
       </details>
     `;
     buildOutput.classList.add("visible");
+    persistWorkspaceContext({
+      outputDirectory: data.outputDirectory,
+      buildTimestamp: data.timestamp,
+    });
 
     // --- Setup Chat ---
     agentSelect.innerHTML = '<option value="">대화 상대 선택</option>';
@@ -477,6 +497,12 @@ buildBtn.addEventListener("click", async () => {
     buildBtn.disabled = false;
     buildBtn.innerHTML = '<i class="fas fa-redo"></i> 다시 시도하기';
   }
+});
+
+buildCard.addEventListener("click", (event) => {
+  const button = event.target.closest("#openWorkspaceBtn");
+  if (!button) return;
+  window.location.href = "/workspace.html";
 });
 
 // ═══════════════════════════════════════
