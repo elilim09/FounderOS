@@ -6,10 +6,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>FounderOS - 멀티 에이전트 설계/구축</title>
   <style>
+    :root {
+      color-scheme: light;
+    }
+
     body {
       font-family: Arial, sans-serif;
       margin: 24px;
       max-width: 1100px;
+      line-height: 1.45;
+      background: #fcfcfd;
     }
 
     textarea,
@@ -18,19 +24,36 @@
       width: 100%;
       margin-top: 6px;
       margin-bottom: 14px;
-      padding: 8px;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #d7dbe3;
+      box-sizing: border-box;
+      font-size: 14px;
     }
 
     button {
       padding: 10px 14px;
       margin-right: 8px;
+      border: 0;
+      border-radius: 8px;
+      background: #2f66f5;
+      color: white;
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
     }
 
     .card {
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      padding: 14px;
+      border: 1px solid #e5e9f0;
+      border-radius: 12px;
+      padding: 16px;
       margin: 12px 0;
+      background: #fff;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
     }
 
     .row {
@@ -41,9 +64,10 @@
 
     pre {
       white-space: pre-wrap;
-      background: #f7f7f7;
+      background: #f7f8fb;
       padding: 10px;
       border-radius: 6px;
+      border: 1px solid #e6eaf2;
     }
 
     .status {
@@ -108,17 +132,102 @@
       margin-bottom: 5px;
       outline: none;
     }
+
+    .chips {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin: 10px 0 6px;
+    }
+
+    .chip {
+      border: 1px solid #cad5ff;
+      background: #f2f5ff;
+      color: #2343aa;
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 12px;
+    }
+
+    .plain-help {
+      margin: 8px 0 14px;
+      padding: 10px;
+      background: #f6f9ff;
+      border: 1px solid #d4e2ff;
+      border-radius: 8px;
+      font-size: 13px;
+      color: #20305f;
+    }
+
+    .step-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .step-box {
+      border: 1px solid #e6eaf2;
+      border-radius: 10px;
+      padding: 10px;
+      background: #fafbff;
+      font-size: 13px;
+    }
+
+    .error-list {
+      margin: 0;
+      padding-left: 20px;
+      color: #8c2f02;
+    }
+
+    @media (max-width: 900px) {
+      .row {
+        grid-template-columns: 1fr;
+      }
+
+      .step-grid {
+        grid-template-columns: 1fr;
+      }
+    }
   </style>
 </head>
 
 <body>
   <h1>FounderOS</h1>
-  <p>사용자 입력 → 멀티 에이전트 설계(의견 + 상호토론 + 합의) → 사용자 구축 요청 → 멀티 에이전트 구축</p>
+  <p>개발을 몰라도, 아이디어를 입력하면 AI 팀이 설계부터 실행 계획까지 만들어줍니다.</p>
   <div id="healthStatus" class="status warn">OpenAI 연결상태 확인 중...</div>
 
   <div class="card">
+    <h2>처음이신가요? (비개발자 빠른 안내)</h2>
+    <div class="step-grid">
+      <div class="step-box"><strong>1단계</strong><br />아이디어를 일상어로 적어도 됩니다.</div>
+      <div class="step-box"><strong>2단계</strong><br />AI 에이전트가 토론해서 MVP 설계를 제안합니다.</div>
+      <div class="step-box"><strong>3단계</strong><br />"구축 요청"을 누르면 실제 실행 계획/파일이 생성됩니다.</div>
+    </div>
+    <details>
+      <summary>용어가 낯선가요? 쉬운 설명 보기</summary>
+      <ul>
+        <li><strong>MVP:</strong> 핵심 기능만 빠르게 검증하는 첫 제품</li>
+        <li><strong>에이전트:</strong> 특정 역할(기획/개발/보안 등)을 맡은 AI 작업자</li>
+        <li><strong>블루프린트:</strong> 서비스 구조를 한눈에 보여주는 설계도</li>
+      </ul>
+    </details>
+  </div>
+
+  <div class="card">
     <h2>1) 아이디어 입력</h2>
+    <label>빠른 템플릿 선택 (선택사항)
+      <select id="ideaTemplate">
+        <option value="">직접 입력</option>
+        <option value="creator">크리에이터 수익화 도우미</option>
+        <option value="local">동네 소상공인 운영 자동화</option>
+        <option value="education">직장인 재교육 코치</option>
+      </select>
+    </label>
+
     <label>서비스/회사명 <input id="startupName" value="AgentCraft" /></label>
+    <div class="plain-help">예: "자영업자를 위한 예약/매출 도우미"처럼 누구나 이해할 말로 작성하세요.</div>
+
     <label>해결 문제 <textarea id="problem">예비 창업자가 AI 에이전트를 설계/구축하는 데 시간이 너무 많이 든다.</textarea></label>
     <label>타겟 고객 <input id="targetCustomer" value="예비 창업자, 초기 스타트업 팀" /></label>
     <label>제약사항 <textarea id="constraints">2주 내 MVP, 클라우드 비용 최소화, 보안 기본 준수</textarea></label>
@@ -132,6 +241,12 @@
         <option value="6">6</option>
       </select>
     </label>
+    <div class="chips">
+      <span class="chip">권장: 처음엔 3~4명</span>
+      <span class="chip">너무 많으면 응답시간 증가</span>
+      <span class="chip">2주 MVP 목표에 집중</span>
+    </div>
+    <div id="inputValidation" class="status warn" style="display:none;"></div>
     <button id="designBtn">멀티 에이전트 설계 실행</button>
   </div>
 
@@ -148,11 +263,14 @@
   </div>
   <div class="card" id="agentCard" style="display: none;">
     <h2>4) 에이전트와 협업하기 (Chat)</h2>
+    <div style="margin-bottom: 10px;" class="plain-help">
+      답변이 모호하면 "초등학생도 이해하게", "비용 중심으로", "오늘 할 일 3개로"처럼 원하는 형식을 지정해보세요.
+    </div>
     <div style="margin-bottom: 10px;">
       <label>대화할 에이전트 선택: <select id="agentSelect"></select></label>
     </div>
     <div id="chatHistory"
-      style="border: 1px solid #ddd; height: 300px; overflow-y: scroll; padding: 10px; background: #fff; margin-bottom: 10px;">
+      style="border: 1px solid #ddd; height: 300px; overflow-y: scroll; padding: 10px; background: #fff; margin-bottom: 10px; border-radius: 10px;">
     </div>
     <div style="display: flex;">
       <input id="chatInput" type="text" placeholder="에이전트에게 업무 지시하세요..."
