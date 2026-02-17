@@ -11,11 +11,15 @@
       .card { border: 1px solid #ddd; border-radius: 8px; padding: 14px; margin: 12px 0; }
       .row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
       pre { white-space: pre-wrap; background: #f7f7f7; padding: 10px; border-radius: 6px; }
+      .status { padding: 10px; border-radius: 8px; margin-bottom: 12px; }
+      .ok { background: #e9fbe9; border: 1px solid #9ed89e; }
+      .warn { background: #fff6e8; border: 1px solid #e5bd78; }
     </style>
   </head>
   <body>
     <h1>FounderOS</h1>
-    <p>사용자 입력 → 멀티 에이전트 설계 → 사용자 구축 요청 → 멀티 에이전트 구축</p>
+    <p>사용자 입력 → 멀티 에이전트 설계(의견 + 상호토론 + 합의) → 사용자 구축 요청 → 멀티 에이전트 구축</p>
+    <div id="healthStatus" class="status warn">OpenAI 연결상태 확인 중...</div>
 
     <div class="card">
       <h2>1) 아이디어 입력</h2>
