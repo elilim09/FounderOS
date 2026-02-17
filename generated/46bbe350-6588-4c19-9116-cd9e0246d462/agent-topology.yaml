@@ -1,0 +1,8 @@
+designId: 46bbe350-6588-4c19-9116-cd9e0246d462
+roles:
+  - MarketAnalyst
+  - ProductStrategist
+  - TechArchitect
+  - OperationsDesigner
+strategy: |
+  4인 팀 구성: 1) KYC/보안 엔진 개발자, 2) 에스크로 및 거래 엔진 개발자, 3) 매물/거래 흐름(UI/UX 포함) 백오피스 개발자, 4) 물류 파트너 연계 및 파이프라인 운영 매니저

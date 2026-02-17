@@ -55,4 +55,11 @@ export interface BuildResult {
   }[];
   operationsChecklist: string[];
   outputDirectory: string;
+  agentPrompts: Record<string, string>;
 }
+
+export type DesignProgress =
+  | { type: "step"; message: string }
+  | { type: "log"; role?: AgentRole; content: string }
+  | { type: "result"; data: DesignResult }
+  | { type: "error"; message: string };

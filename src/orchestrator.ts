@@ -2,7 +2,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { generateJson, generateText } from "./openaiClient.js";
-import { AgentDebate, AgentOpinion, AgentRole, BuildResult, DesignResult, SystemBlueprint, UserIdeaInput } from "./types.js";
+import { AgentDebate, AgentOpinion, AgentRole, BuildResult, DesignResult, DesignProgress, SystemBlueprint, UserIdeaInput } from "./types.js";
 
 const ROLE_POOL: AgentRole[] = [
   "MarketAnalyst",
@@ -91,15 +91,48 @@ async function createBlueprint(input: UserIdeaInput, consensusSummary: string): 
   };
 }
 
-export async function designMultiAgentSystem(input: UserIdeaInput): Promise<DesignResult> {
+export async function designMultiAgentSystem(
+  input: UserIdeaInput,
+  onProgress: (progress: DesignProgress) => void
+): Promise<DesignResult> {
+  onProgress({ type: "step", message: "🚀 멀티 에이전트 시스템 설계를 시작합니다..." });
   const roles = pickRoles(input.requestedAgentCount);
 
-  const opinions = await Promise.all(roles.map((role) => collectOpinion(input, role)));
-  const debateRound = await Promise.all(roles.map((role) => debate(input, role, opinions)));
-  const consensusSummary = await consensus(input, opinions, debateRound);
-  const systemBlueprint = await createBlueprint(input, consensusSummary);
+  onProgress({ type: "step", message: `👥 ${roles.length}명의 전문 에이전트를 소집했습니다: ${roles.join(", ")}` });
 
-  return {
+  // 1. Collect Opinions
+  onProgress({ type: "step", message: "🧠 1차 의견 수집 중: 각 에이전트가 아이디어를 분석하고 있습니다..." });
+  const opinions = await Promise.all(
+    roles.map(async (role) => {
+      onProgress({ type: "log", role, content: "분석 시작..." });
+      const opinion = await collectOpinion(input, role);
+      onProgress({ type: "log", role, content: `의견 제출 완료 (Stance: ${opinion.stance})` });
+      return opinion;
+    })
+  );
+
+  // 2. Debate
+  onProgress({ type: "step", message: "🔥 2차 상호 토론 중: 에이전트들이 서로의 의견을 검토하고 논쟁합니다..." });
+  const debateRound = await Promise.all(
+    roles.map(async (role) => {
+      onProgress({ type: "log", role, content: "타 에이전트 의견 검토 및 반박 준비 중..." });
+      const debateResult = await debate(input, role, opinions);
+      onProgress({ type: "log", role, content: "토론 의견 제출 완료" });
+      return debateResult;
+    })
+  );
+
+  // 3. Consensus
+  onProgress({ type: "step", message: "🤝 최종 합의 도출 중: 모든 논의를 종합하여 결론을 내립니다..." });
+  const consensusSummary = await consensus(input, opinions, debateRound);
+  onProgress({ type: "log", content: "최종 합의안 작성 완료" });
+
+  // 4. Blueprint
+  onProgress({ type: "step", message: "📐 시스템 블루프린트 설계 중: 아키텍처와 리스크 관리 방안을 수립합니다..." });
+  const systemBlueprint = await createBlueprint(input, consensusSummary);
+  onProgress({ type: "log", content: "블루프린트 생성 완료" });
+
+  const result: DesignResult = {
     designId: randomUUID(),
     timestamp: new Date().toISOString(),
     input,
@@ -108,6 +141,9 @@ export async function designMultiAgentSystem(input: UserIdeaInput): Promise<Desi
     consensusSummary,
     systemBlueprint
   };
+
+  onProgress({ type: "result", data: result });
+  return result;
 }
 
 function composeBuildPrompt(design: DesignResult): string {
@@ -120,12 +156,55 @@ function composeBuildPrompt(design: DesignResult): string {
 }
 
 export async function buildFromDesign(design: DesignResult): Promise<BuildResult> {
-  const buildPlan = await generateText(
+  // 1. Generate Build Plan
+  const buildPlanPromise = generateText(
     "You are a senior multi-agent implementation orchestrator for startup platforms.",
     composeBuildPrompt(design)
   );
 
+  // 2. Generate Optimized Prompts (OpenAI Academy Style)
+  const promptsPromise = generateJson<Record<string, string>>(
+    "You are a Prompt Engineering Expert. Generate high-quality system prompts for each agent role. Respond in valid JSON.",
+    [
+      "Follow OpenAI Best Practices:",
+      "1. Assign a distinct Persona.",
+      "2. Provide specific Context & Constraints from the design.",
+      "3. Use 'Chain of Thought' instructions.",
+      "4. Define clear Output Formats.",
+      `Design Context: ${JSON.stringify(design.input)}`,
+      `Consensus: ${design.consensusSummary}`,
+      `Roles: ${design.opinions.map(o => o.role).join(", ")}`,
+      "Return JSON: { [RoleName]: 'System Prompt Text...' }"
+    ].join("\n")
+  );
+
+  const [buildPlan, prompts] = await Promise.all([buildPlanPromise, promptsPromise]);
+
+  // 3. Generate Executable Runner Code
+  const runnerCodePromise = generateText(
+    "You are a Senior TypeScript Developer. Generate a ready-to-run 'agent_runner.ts' file.",
+    [
+      "Requirements:",
+      "1. Use 'openai' and 'dotenv' packages.",
+      "2. Include the following system prompts as const variables.",
+      "3. Implement a CLI loop using 'readline' to select an agent and chat.",
+      "4. Code must be complete, with imports and error handling.",
+      "5. No placeholders. Make it work immediately.",
+      `Prompts: ${JSON.stringify(prompts, null, 2)}`
+    ].join("\n")
+  );
+
+  const runnerCode = await runnerCodePromise;
+
   const generatedArtifacts = [
+    {
+      name: "agent-prompts.json",
+      content: JSON.stringify(prompts, null, 2)
+    },
+    {
+      name: "agent_runner.ts",
+      content: runnerCode
+    },
     {
       name: "agent-topology.yaml",
       content: `designId: ${design.designId}\nroles:\n${design.opinions.map((o) => `  - ${o.role}`).join("\n")}\nstrategy: |\n  ${design.systemBlueprint.agentTopology.replace(/\n/g, "\n  ")}\n`
@@ -162,6 +241,7 @@ export async function buildFromDesign(design: DesignResult): Promise<BuildResult
     buildPlan,
     generatedArtifacts,
     operationsChecklist,
-    outputDirectory
+    outputDirectory,
+    agentPrompts: prompts
   };
 }

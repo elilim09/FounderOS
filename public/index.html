@@ -1,57 +1,167 @@
 <!doctype html>
 <html lang="ko">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>FounderOS - 멀티 에이전트 설계/구축</title>
-    <style>
-      body { font-family: Arial, sans-serif; margin: 24px; max-width: 1100px; }
-      textarea, input, select { width: 100%; margin-top: 6px; margin-bottom: 14px; padding: 8px; }
-      button { padding: 10px 14px; margin-right: 8px; }
-      .card { border: 1px solid #ddd; border-radius: 8px; padding: 14px; margin: 12px 0; }
-      .row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-      pre { white-space: pre-wrap; background: #f7f7f7; padding: 10px; border-radius: 6px; }
-      .status { padding: 10px; border-radius: 8px; margin-bottom: 12px; }
-      .ok { background: #e9fbe9; border: 1px solid #9ed89e; }
-      .warn { background: #fff6e8; border: 1px solid #e5bd78; }
-    </style>
-  </head>
-  <body>
-    <h1>FounderOS</h1>
-    <p>사용자 입력 → 멀티 에이전트 설계(의견 + 상호토론 + 합의) → 사용자 구축 요청 → 멀티 에이전트 구축</p>
-    <div id="healthStatus" class="status warn">OpenAI 연결상태 확인 중...</div>
 
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FounderOS - 멀티 에이전트 설계/구축</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 24px;
+      max-width: 1100px;
+    }
+
+    textarea,
+    input,
+    select {
+      width: 100%;
+      margin-top: 6px;
+      margin-bottom: 14px;
+      padding: 8px;
+    }
+
+    button {
+      padding: 10px 14px;
+      margin-right: 8px;
+    }
+
+    .card {
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 14px;
+      margin: 12px 0;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    pre {
+      white-space: pre-wrap;
+      background: #f7f7f7;
+      padding: 10px;
+      border-radius: 6px;
+    }
+
+    .status {
+      padding: 10px;
+      border-radius: 8px;
+      margin-bottom: 12px;
+    }
+
+    .ok {
+      background: #e9fbe9;
+      border: 1px solid #9ed89e;
+    }
+
+    .warn {
+      background: #fff6e8;
+      border: 1px solid #e5bd78;
+    }
+
+    .progress-container {
+      margin-top: 10px;
+      border: 1px solid #eee;
+      padding: 10px;
+      border-radius: 6px;
+      background: #fafafa;
+    }
+
+    .current-step {
+      font-weight: bold;
+      color: #2c3e50;
+      margin-bottom: 8px;
+    }
+
+    .log-details {
+      font-size: 0.9em;
+      color: #555;
+      max-height: 200px;
+      overflow-y: auto;
+      background: #fff;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+
+    .log-entry {
+      margin-bottom: 4px;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 2px;
+    }
+
+    .log-role {
+      font-weight: bold;
+      color: #007bff;
+    }
+
+    details {
+      margin-top: 10px;
+      cursor: pointer;
+    }
+
+    summary {
+      font-weight: bold;
+      margin-bottom: 5px;
+      outline: none;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>FounderOS</h1>
+  <p>사용자 입력 → 멀티 에이전트 설계(의견 + 상호토론 + 합의) → 사용자 구축 요청 → 멀티 에이전트 구축</p>
+  <div id="healthStatus" class="status warn">OpenAI 연결상태 확인 중...</div>
+
+  <div class="card">
+    <h2>1) 아이디어 입력</h2>
+    <label>서비스/회사명 <input id="startupName" value="AgentCraft" /></label>
+    <label>해결 문제 <textarea id="problem">예비 창업자가 AI 에이전트를 설계/구축하는 데 시간이 너무 많이 든다.</textarea></label>
+    <label>타겟 고객 <input id="targetCustomer" value="예비 창업자, 초기 스타트업 팀" /></label>
+    <label>제약사항 <textarea id="constraints">2주 내 MVP, 클라우드 비용 최소화, 보안 기본 준수</textarea></label>
+    <label>추가 맥락 <textarea id="additionalContext">노코드 UI와 API를 동시에 제공하고 싶음.</textarea></label>
+    <label>멀티 에이전트 규모(개수)
+      <select id="requestedAgentCount">
+        <option value="2">2</option>
+        <option value="3">3</option>
+        <option value="4" selected>4</option>
+        <option value="5">5</option>
+        <option value="6">6</option>
+      </select>
+    </label>
+    <button id="designBtn">멀티 에이전트 설계 실행</button>
+  </div>
+
+  <div class="row">
     <div class="card">
-      <h2>1) 아이디어 입력</h2>
-      <label>서비스/회사명 <input id="startupName" value="AgentCraft" /></label>
-      <label>해결 문제 <textarea id="problem">예비 창업자가 AI 에이전트를 설계/구축하는 데 시간이 너무 많이 든다.</textarea></label>
-      <label>타겟 고객 <input id="targetCustomer" value="예비 창업자, 초기 스타트업 팀" /></label>
-      <label>제약사항 <textarea id="constraints">2주 내 MVP, 클라우드 비용 최소화, 보안 기본 준수</textarea></label>
-      <label>추가 맥락 <textarea id="additionalContext">노코드 UI와 API를 동시에 제공하고 싶음.</textarea></label>
-      <label>멀티 에이전트 규모(개수)
-        <select id="requestedAgentCount">
-          <option value="2">2</option>
-          <option value="3">3</option>
-          <option value="4" selected>4</option>
-          <option value="5">5</option>
-          <option value="6">6</option>
-        </select>
-      </label>
-      <button id="designBtn">멀티 에이전트 설계 실행</button>
+      <h2>2) 설계 결과</h2>
+      <div id="designOutput">아직 설계 전입니다.</div>
+      <button id="buildBtn" disabled>이 설계로 구축 요청</button>
     </div>
-
-    <div class="row">
-      <div class="card">
-        <h2>2) 설계 결과</h2>
-        <div id="designOutput">아직 설계 전입니다.</div>
-        <button id="buildBtn" disabled>이 설계로 구축 요청</button>
-      </div>
-      <div class="card">
-        <h2>3) 구축 결과</h2>
-        <div id="buildOutput">아직 구축 전입니다.</div>
-      </div>
+    <div class="card">
+      <h2>3) 구축 결과</h2>
+      <div id="buildOutput">아직 구축 전입니다.</div>
     </div>
+  </div>
+  <div class="card" id="agentCard" style="display: none;">
+    <h2>4) 에이전트와 협업하기 (Chat)</h2>
+    <div style="margin-bottom: 10px;">
+      <label>대화할 에이전트 선택: <select id="agentSelect"></select></label>
+    </div>
+    <div id="chatHistory"
+      style="border: 1px solid #ddd; height: 300px; overflow-y: scroll; padding: 10px; background: #fff; margin-bottom: 10px;">
+    </div>
+    <div style="display: flex;">
+      <input id="chatInput" type="text" placeholder="에이전트에게 업무 지시하세요..."
+        style="flex: 1; margin: 0; margin-right: 8px;" />
+      <button id="sendChatBtn">전송</button>
+    </div>
+  </div>
 
-    <script type="module" src="/main.js"></script>
-  </body>
+  <script type="module" src="/main.js"></script>
+</body>
+
 </html>

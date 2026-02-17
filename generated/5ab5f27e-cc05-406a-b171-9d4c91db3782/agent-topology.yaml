@@ -1,0 +1,7 @@
+designId: 5ab5f27e-cc05-406a-b171-9d4c91db3782
+roles:
+  - MarketAnalyst
+  - ProductStrategist
+  - TechArchitect
+strategy: |
+  다중 텐션시 격리형 아키텍처로 구성되며, 사용자 UI Builder → 템플릿 기반 API 커넥터 레지스트리 → 런타임 샌드박스에서 에이전트 템플릿 실행 → Observability 대시보드 및 로그 수집 → 보안 모듈이 인증/권한과 데이터 암호화를 적용한다.

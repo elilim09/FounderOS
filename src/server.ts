@@ -3,7 +3,7 @@ import express from "express";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { z } from "zod";
-import { OPENAI_MODEL } from "./openaiClient.js";
+import { OPENAI_MODEL, generateText } from "./openaiClient.js";
 import { buildFromDesign, designMultiAgentSystem } from "./orchestrator.js";
 import { getBuild, getDesign, saveBuild, saveDesign } from "./store.js";
 
@@ -37,14 +37,21 @@ app.post("/api/design", async (req, res) => {
     return res.status(400).json({ error: parsed.error.flatten() });
   }
 
+  // Enable streaming
+  res.setHeader("Content-Type", "application/x-ndjson; charset=utf-8");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+
   try {
-    const design = await designMultiAgentSystem(parsed.data);
+    const design = await designMultiAgentSystem(parsed.data, (progress) => {
+      res.write(JSON.stringify(progress) + "\n");
+    });
     saveDesign(design);
-    return res.json(design);
+    res.end();
   } catch (error) {
     const message = error instanceof Error ? error.message : "failed to generate design";
-    const status = message.includes("OPENAI_API_KEY") ? 503 : 500;
-    return res.status(status).json({ error: message });
+    res.write(JSON.stringify({ type: "error", message }) + "\n");
+    res.end();
   }
 });
 
@@ -79,6 +86,24 @@ app.get("/api/build/:designId", (req, res) => {
     return res.status(404).json({ error: "build not found" });
   }
   return res.json(build);
+});
+
+app.post("/api/chat/:designId", async (req, res) => {
+  const { designId } = req.params;
+  const { role, message } = req.body;
+
+  const build = getBuild(designId);
+  if (!build) return res.status(404).json({ error: "Build not found" });
+
+  const systemPrompt = build.agentPrompts?.[role];
+  if (!systemPrompt) return res.status(400).json({ error: "Agent role not found" });
+
+  try {
+    const response = await generateText(systemPrompt, message);
+    return res.json({ response });
+  } catch (error) {
+    return res.status(500).json({ error: String(error) });
+  }
 });
 
 const port = Number(process.env.PORT ?? 3000);

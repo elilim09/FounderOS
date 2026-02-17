@@ -21,7 +21,7 @@ export async function generateText(system: string, user: string): Promise<string
 
   const completion = await client.chat.completions.create({
     model: OPENAI_MODEL,
-    temperature: 0.3,
+    temperature: 1,
     messages: [
       { role: "system", content: system },
       { role: "user", content: user }
@@ -41,7 +41,7 @@ export async function generateJson<T>(system: string, user: string): Promise<T> 
 
   const completion = await client.chat.completions.create({
     model: OPENAI_MODEL,
-    temperature: 0.2,
+    temperature: 1,
     response_format: { type: "json_object" },
     messages: [
       { role: "system", content: `${system}\nAlways return valid JSON object only.` },

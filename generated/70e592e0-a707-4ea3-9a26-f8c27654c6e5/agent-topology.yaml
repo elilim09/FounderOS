@@ -1,0 +1,8 @@
+designId: 70e592e0-a707-4ea3-9a26-f8c27654c6e5
+roles:
+  - MarketAnalyst
+  - ProductStrategist
+  - TechArchitect
+  - OperationsDesigner
+strategy: |
+  다중 테넌시 SaaS 구조의 토폴로지로, 각 테넌트는 독립된 Users/Tenants/Instances를 보유합니다. 프런트엔드 빌더(노코드 UI) → 백엔드 템플릿 관리/API 생성 엔진 → 에이전트 런타임 서비스 → 데이터 저장소. OAuth2/OIDC 기반 SSO와 RBAC를 통한 보안, Secrets/KMS 관리, 감사 로그를 통해 운영. 서버리스로 비용 예측 가능/확장성 확보.

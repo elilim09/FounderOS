@@ -1,0 +1,8 @@
+designId: 2c4b70f6-0af3-4901-9a9d-189391bd1335
+roles:
+  - MarketAnalyst
+  - ProductStrategist
+  - TechArchitect
+  - OperationsDesigner
+strategy: |
+  다중 텐턴시를 지원하는 모듈형 토폴로지. 중앙 API 엔진 코어를 중심으로 Agent Core/Workflow Core/Connector Core가 독립 모듈로 구성되며, 프런트 엔진은 노코드 UI(Beta)로 연결된다. 런타임은 경량 서버리스 엔진으로 에이전트를 실행하고, 데이터 격리와 인증/권한 부여, 감사 로그를 텐턴시 경계에서 보장한다. 운영/관측성 계층은 로깅/메트릭/알람으로 구성되어 비용 모니터링과 배포 파이프라인(CC/CD)와 연동된다.
