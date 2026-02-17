@@ -34,7 +34,14 @@ app.get("/api/health", (_req, res) => {
 app.post("/api/design", async (req, res) => {
   const parsed = designInputSchema.safeParse(req.body);
   if (!parsed.success) {
-    return res.status(400).json({ error: parsed.error.flatten() });
+    const fieldErrors = parsed.error.flatten().fieldErrors;
+    const summary = Object.entries(fieldErrors)
+      .flatMap(([field, messages]) => (messages ?? []).map((message) => `${field}: ${message}`))
+      .join(" | ");
+    return res.status(400).json({
+      error: summary || "입력값이 올바르지 않습니다. 각 항목을 다시 확인해 주세요.",
+      fieldErrors
+    });
   }
 
   // Enable streaming
