@@ -2,27 +2,61 @@ import OpenAI from "openai";
 
 export const OPENAI_MODEL = process.env.OPENAI_MODEL ?? "gpt-4o-mini";
 
-export const client = process.env.OPENAI_API_KEY
-  ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
-  : null;
+let cachedClient: OpenAI | null = null;
 
-export async function generateWithOpenAI(system: string, user: string): Promise<string> {
-  if (!client) {
-    return [
-      "[MOCK MODE] OPENAI_API_KEY가 없어 샘플 응답을 반환합니다.",
-      "핵심 목표: 린 MVP를 빠르게 출시하고 사용자 피드백 루프를 강화하세요.",
-      "권장: 역할 기반 멀티 에이전트 + 이벤트 로그 + 휴먼 승인 게이트를 채택하세요."
-    ].join("\n");
+function getClient(): OpenAI {
+  if (cachedClient) return cachedClient;
+
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    throw new Error("OPENAI_API_KEY is required. Set it in your environment before using this service.");
   }
+
+  cachedClient = new OpenAI({ apiKey });
+  return cachedClient;
+}
+
+export async function generateText(system: string, user: string): Promise<string> {
+  const client = getClient();
 
   const completion = await client.chat.completions.create({
     model: OPENAI_MODEL,
-    temperature: 0.4,
+    temperature: 0.3,
     messages: [
       { role: "system", content: system },
       { role: "user", content: user }
     ]
   });
 
-  return completion.choices[0]?.message?.content ?? "응답을 생성하지 못했습니다.";
+  const text = completion.choices[0]?.message?.content;
+  if (!text) {
+    throw new Error("OpenAI returned an empty text response.");
+  }
+
+  return text;
+}
+
+export async function generateJson<T>(system: string, user: string): Promise<T> {
+  const client = getClient();
+
+  const completion = await client.chat.completions.create({
+    model: OPENAI_MODEL,
+    temperature: 0.2,
+    response_format: { type: "json_object" },
+    messages: [
+      { role: "system", content: `${system}\nAlways return valid JSON object only.` },
+      { role: "user", content: user }
+    ]
+  });
+
+  const raw = completion.choices[0]?.message?.content;
+  if (!raw) {
+    throw new Error("OpenAI returned an empty JSON response.");
+  }
+
+  try {
+    return JSON.parse(raw) as T;
+  } catch {
+    throw new Error(`OpenAI returned non-JSON content: ${raw.slice(0, 240)}`);
+  }
 }

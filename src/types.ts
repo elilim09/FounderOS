@@ -17,7 +17,22 @@ export interface UserIdeaInput {
 
 export interface AgentOpinion {
   role: AgentRole;
-  opinion: string;
+  stance: string;
+  priorities: string[];
+  objections: string[];
+}
+
+export interface AgentDebate {
+  role: AgentRole;
+  rebuttal: string;
+  updatedPriorities: string[];
+}
+
+export interface SystemBlueprint {
+  architecture: string;
+  agentTopology: string;
+  coreFlows: string[];
+  riskControls: string[];
 }
 
 export interface DesignResult {
@@ -25,13 +40,9 @@ export interface DesignResult {
   timestamp: string;
   input: UserIdeaInput;
   opinions: AgentOpinion[];
+  debateRound: AgentDebate[];
   consensusSummary: string;
-  systemBlueprint: {
-    architecture: string;
-    agentTopology: string;
-    coreFlows: string[];
-    riskControls: string[];
-  };
+  systemBlueprint: SystemBlueprint;
 }
 
 export interface BuildResult {
@@ -43,4 +54,5 @@ export interface BuildResult {
     content: string;
   }[];
   operationsChecklist: string[];
+  outputDirectory: string;
 }
