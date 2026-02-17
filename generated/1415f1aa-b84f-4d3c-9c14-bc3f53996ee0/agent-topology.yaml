@@ -1,0 +1,7 @@
+designId: 1415f1aa-b84f-4d3c-9c14-bc3f53996ee0
+roles:
+  - MarketAnalyst
+  - ProductStrategist
+  - TechArchitect
+strategy: |
+  에이전트 수: 3. 역할 분담: (A) API/데이터 흐름 코어, (B) UI 빌더/템플릿 관리, (C) 인증/거버넌스/관찰성/협업 코어. 서로 경계와 인터페이스를 명확히 하여 API-first 흐름을 지원.

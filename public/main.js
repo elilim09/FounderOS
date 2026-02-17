@@ -1,182 +1,240 @@
-const designBtn = document.getElementById("designBtn");
-const buildBtn = document.getElementById("buildBtn");
-const designOutput = document.getElementById("designOutput");
-const buildOutput = document.getElementById("buildOutput");
-const healthStatus = document.getElementById("healthStatus");
-const inputValidation = document.getElementById("inputValidation");
-const ideaTemplateSelect = document.getElementById("ideaTemplate");
+/* FounderOS — main.js
+ * HTML 요소 참조와 백엔드 데이터 구조에 완벽히 맞춤
+ */
+
+// ═══════════════════════════════════════
+// DOM References
+// ═══════════════════════════════════════
+const $ = (id) => document.getElementById(id);
+
+const healthStatus = $("healthStatus");
+const inputCard = $("inputCard");
+const designCard = $("designCard");
+const buildCard = $("buildCard");
+
+const designBtn = $("designBtn");
+const buildBtn = $("buildBtn");
+
+const meetingRoom = $("meetingRoom");
+const meetingStatus = $("meetingStatus");
+const agentGrid = $("agentGrid");
+const logContainer = $("logContainer");
+const designResult = $("designResult");
+
+const buildStatus = $("buildStatus");
+const buildOutput = $("buildOutput");
+const chatInterface = $("chatInterface");
+const chatHistory = $("chatHistory");
+const chatInput = $("chatInput");
+const sendChatBtn = $("sendChatBtn");
+const agentSelect = $("agentSelect");
+
+const inputValidation = $("inputValidation");
+const ideaTemplateSelect = $("ideaTemplate");
 
 let currentDesignId = null;
 
-const ideaTemplates = {
-  creator: {
-    startupName: "CreatorPilot",
-    problem: "1인 크리에이터가 콘텐츠 일정, 후원자 관리, 수익 분석을 동시에 처리하기 어렵다.",
-    targetCustomer: "유튜버, 뉴스레터 운영자, 1인 지식창업가",
-    constraints: "1개월 내 베타, 월 운영비 30만원 이내, 모바일 우선",
-    additionalContext: "초기에는 자동화 정확도보다 사용 편의성을 우선하고 싶음.",
-    requestedAgentCount: "4"
-  },
-  local: {
-    startupName: "LocalFlow",
-    problem: "동네 가게 사장이 예약, 문의 응대, 매출 정리를 수기로 해서 시간이 많이 든다.",
-    targetCustomer: "카페, 미용실, 필라테스 등 소상공인",
-    constraints: "2주 MVP, 기존 카카오톡 사용 습관 유지, 교육 없이 바로 사용",
-    additionalContext: "복잡한 대시보드보다 쉬운 알림 중심 경험이 필요함.",
-    requestedAgentCount: "3"
-  },
-  education: {
-    startupName: "UpSkillMate",
-    problem: "직장인이 이직/업무 역량 강화를 위해 무엇을 먼저 공부해야 할지 판단하기 어렵다.",
-    targetCustomer: "3~10년차 직장인",
-    constraints: "첫 출시까지 3주, 개인정보 최소 수집, 콘텐츠 제작 인력 1명",
-    additionalContext: "개인 맞춤 로드맵과 매주 회고 리포트를 제공하고 싶음.",
-    requestedAgentCount: "4"
-  }
+// ═══════════════════════════════════════
+// Role Mapping (영어 역할명 → 한글 + 이모지)
+// ═══════════════════════════════════════
+const ROLE_MAP = {
+  "MarketAnalyst": { ko: "시장 분석가", emoji: "📊" },
+  "ProductStrategist": { ko: "제품 전략가", emoji: "🎯" },
+  "TechArchitect": { ko: "기술 설계자", emoji: "🏗️" },
+  "OperationsDesigner": { ko: "운영 설계자", emoji: "⚙️" },
+  "GrowthPlanner": { ko: "성장 기획자", emoji: "📈" },
+  "ImplementationLead": { ko: "실행 리더", emoji: "🔧" },
+  "Facilitator": { ko: "진행자", emoji: "🎤" },
 };
 
-function escapeHtml(text) {
+function displayRole(role) {
+  const mapped = ROLE_MAP[role];
+  return mapped ? `${mapped.emoji} ${mapped.ko}` : `🤖 ${role}`;
+}
+
+function roleEmoji(role) {
+  return ROLE_MAP[role]?.emoji || "🤖";
+}
+
+// ═══════════════════════════════════════
+// Templates
+// ═══════════════════════════════════════
+const ideaTemplates = {
+  creator: {
+    startupName: "PixelFan",
+    problem: "1인 크리에이터가 콘텐츠 일정, 후원자 관리, 수익 분석을 동시에 처리하기 어렵다.",
+    targetCustomer: "유튜버, 뉴스레터 운영자",
+    constraints: "1개월 내 베타, 월 운영비 30만원 이내",
+    additionalContext: "사용 편의성 최우선, 모바일 친화적 UI",
+  },
+  local: {
+    startupName: "ShopKeeper",
+    problem: "동네 가게 사장이 예약, 문의 응대, 매출 정리를 수기로 해서 시간이 많이 든다.",
+    targetCustomer: "카페, 미용실 소상공인",
+    constraints: "2주 MVP, 카카오톡 연동 필수",
+    additionalContext: "복잡한 기능 없이 알림 중심 경험 필요",
+  },
+  education: {
+    startupName: "PromoPath",
+    problem: "직장인이 이직/업무 역량 강화를 위해 무엇을 먼저 공부해야 할지 판단하기 어렵다.",
+    targetCustomer: "3~5년차 주니어 직장인",
+    constraints: "데이터 수집 최소화, 개인화 추천 알고리즘",
+    additionalContext: "로드맵 시각화 기능 중요",
+  },
+};
+
+// ═══════════════════════════════════════
+// Utilities
+// ═══════════════════════════════════════
+function val(id) {
+  return $(id)?.value?.trim() ?? "";
+}
+
+function esc(text) {
+  if (!text) return "";
   return String(text)
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#39;");
+    .replaceAll(">", "&gt;");
 }
 
-function value(id) {
-  return document.getElementById(id).value;
-}
-
-function applyTemplate(templateKey) {
-  const template = ideaTemplates[templateKey];
-  if (!template) return;
-
-  Object.entries(template).forEach(([key, text]) => {
-    const el = document.getElementById(key);
-    if (el) {
-      el.value = text;
-    }
+function setStep(n) {
+  document.querySelectorAll(".progress-step").forEach((el) => {
+    const step = Number(el.dataset.step);
+    el.classList.remove("active", "done");
+    if (step < n) el.classList.add("done");
+    if (step === n) el.classList.add("active");
   });
 }
 
-function validateInput() {
-  const checks = [
-    {
-      ok: value("startupName").trim().length >= 2,
-      message: "서비스/회사명은 최소 2글자 이상으로 입력해 주세요."
-    },
-    {
-      ok: value("problem").trim().length >= 10,
-      message: "해결 문제를 조금 더 구체적으로(최소 10글자) 적어 주세요."
-    },
-    {
-      ok: value("targetCustomer").trim().length >= 2,
-      message: "타겟 고객을 한 줄이라도 입력해 주세요."
-    },
-    {
-      ok: value("constraints").trim().length >= 2,
-      message: "기간/비용/인력 등 제약사항을 입력해 주세요."
-    }
-  ];
-
-  return checks.filter((c) => !c.ok).map((c) => c.message);
-}
-
-function simplifyBlueprint(blueprint = {}) {
-  const components = Array.isArray(blueprint.components) ? blueprint.components : [];
-  const risks = Array.isArray(blueprint.risks) ? blueprint.risks : [];
-  const milestones = Array.isArray(blueprint.milestones) ? blueprint.milestones : [];
-
-  return {
-    componentNames: components.slice(0, 4).map((c) => c.name || "핵심 모듈"),
-    riskNames: risks.slice(0, 3).map((r) => r.name || r),
-    milestoneNames: milestones.slice(0, 3).map((m) => m.name || m)
-  };
-}
-
+// ═══════════════════════════════════════
+// Health Check
+// ═══════════════════════════════════════
 async function checkHealth() {
   try {
     const res = await fetch("/api/health");
     const data = await res.json();
     if (data.openaiConfigured) {
-      healthStatus.className = "status ok";
-      healthStatus.innerHTML = `OpenAI 연결 준비 완료 (model: <strong>${escapeHtml(data.model)}</strong>)`;
+      healthStatus.className = "status-bar ok";
+      healthStatus.innerHTML = `<i class="fas fa-check-circle"></i> 시스템 준비 완료 — AI 모델: ${esc(data.model)}`;
     } else {
-      healthStatus.className = "status warn";
-      healthStatus.innerHTML = "OPENAI_API_KEY가 설정되지 않았습니다. 실제 설계/구축 호출이 실패합니다.";
+      healthStatus.className = "status-bar warn";
+      healthStatus.innerHTML = `<i class="fas fa-exclamation-triangle"></i> API 키가 설정되지 않았습니다. 관리자에게 문의하세요.`;
     }
   } catch {
-    healthStatus.className = "status warn";
-    healthStatus.textContent = "상태 확인 실패";
+    healthStatus.className = "status-bar warn";
+    healthStatus.innerHTML = `<i class="fas fa-times-circle"></i> 서버에 연결할 수 없습니다.`;
   }
 }
-
 checkHealth();
 
-ideaTemplateSelect.addEventListener("change", (event) => {
-  const key = event.target.value;
-  if (key) {
-    applyTemplate(key);
-    inputValidation.style.display = "none";
-  }
+// ═══════════════════════════════════════
+// Template Selection
+// ═══════════════════════════════════════
+ideaTemplateSelect.addEventListener("change", (e) => {
+  const key = e.target.value;
+  if (!key || !ideaTemplates[key]) return;
+  const t = ideaTemplates[key];
+  $("startupName").value = t.startupName;
+  $("problem").value = t.problem;
+  $("targetCustomer").value = t.targetCustomer;
+  $("constraints").value = t.constraints;
+  $("additionalContext").value = t.additionalContext;
+  inputValidation.classList.remove("visible");
 });
 
-designBtn.addEventListener("click", async () => {
-  const errors = validateInput();
-  if (errors.length > 0) {
-    inputValidation.className = "status warn";
-    inputValidation.style.display = "block";
-    inputValidation.innerHTML = `<strong>입력 보완이 필요합니다.</strong><ul class="error-list">${errors
-      .map((msg) => `<li>${escapeHtml(msg)}</li>`)
-      .join("")}</ul>`;
-    return;
+// ═══════════════════════════════════════
+// Agent Avatar Components
+// ═══════════════════════════════════════
+function createAgentAvatar(role) {
+  const el = document.createElement("div");
+  el.className = "agent-avatar";
+  el.id = `avatar-${role}`;
+  el.innerHTML = `
+    <div class="agent-circle">${roleEmoji(role)}</div>
+    <div class="agent-label">${esc(ROLE_MAP[role]?.ko || role)}</div>
+  `;
+  return el;
+}
+
+function highlightAgent(role) {
+  document.querySelectorAll(".agent-avatar").forEach((el) => el.classList.remove("active"));
+  if (!role) return;
+
+  let avatar = $(`avatar-${role}`);
+  if (!avatar) {
+    avatar = createAgentAvatar(role);
+    agentGrid.appendChild(avatar);
+  }
+  avatar.classList.add("active");
+}
+
+function addLog(text, role = null) {
+  const div = document.createElement("div");
+  div.className = role ? "log-item" : "log-item system-log";
+
+  if (role) {
+    const truncated = text.length > 180 ? text.substring(0, 180) + "…" : text;
+    div.innerHTML = `<span class="role-tag">${esc(ROLE_MAP[role]?.ko || role)}:</span> ${esc(truncated)}`;
+  } else {
+    div.textContent = text;
   }
 
-  inputValidation.style.display = "none";
+  logContainer.appendChild(div);
+  logContainer.scrollTop = logContainer.scrollHeight;
+}
+
+// ═══════════════════════════════════════
+// DESIGN FLOW
+// ═══════════════════════════════════════
+designBtn.addEventListener("click", async () => {
+  // --- Validation ---
+  const errors = [];
+  if (val("startupName").length < 2) errors.push("서비스 이름을 입력해주세요 (최소 2글자).");
+  if (val("problem").length < 5) errors.push("해결하려는 문제를 조금 더 자세히 적어주세요.");
+  if (val("targetCustomer").length < 2) errors.push("대상 고객을 입력해주세요.");
+  if (val("constraints").length < 2) errors.push("제약 사항을 입력해주세요.");
+
+  if (errors.length > 0) {
+    inputValidation.innerHTML = errors.map((e) => `• ${e}`).join("<br>");
+    inputValidation.classList.add("visible");
+    return;
+  }
+  inputValidation.classList.remove("visible");
+
+  // --- UI Transition ---
   designBtn.disabled = true;
-  buildBtn.disabled = true;
-  designOutput.innerHTML = "";
+  designBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> AI 팀이 분석 중입니다...';
+  setStep(2);
 
-  const progressContainer = document.createElement("div");
-  progressContainer.className = "progress-container";
+  designCard.style.display = "block";
+  meetingRoom.classList.add("visible");
+  designResult.classList.remove("visible");
+  agentGrid.innerHTML = "";
+  logContainer.innerHTML = "";
+  meetingStatus.textContent = "AI 전문가들이 회의실에 입장하고 있습니다...";
 
-  const statusEl = document.createElement("div");
-  statusEl.className = "current-step";
-  statusEl.innerHTML = "🚀 시스템 초기화 중...";
-
-  const detailsEl = document.createElement("details");
-  const summaryEl = document.createElement("summary");
-  summaryEl.textContent = "자세히 보기 (실시간 로그)";
-  const logContainer = document.createElement("div");
-  logContainer.className = "log-details";
-
-  detailsEl.appendChild(summaryEl);
-  detailsEl.appendChild(logContainer);
-
-  progressContainer.appendChild(statusEl);
-  progressContainer.appendChild(detailsEl);
-  designOutput.appendChild(progressContainer);
+  setTimeout(() => designCard.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
 
   const payload = {
-    startupName: value("startupName"),
-    problem: value("problem"),
-    targetCustomer: value("targetCustomer"),
-    constraints: value("constraints"),
-    additionalContext: value("additionalContext"),
-    requestedAgentCount: Number(value("requestedAgentCount"))
+    startupName: val("startupName"),
+    problem: val("problem"),
+    targetCustomer: val("targetCustomer"),
+    constraints: val("constraints"),
+    additionalContext: val("additionalContext"),
+    requestedAgentCount: Number(val("requestedAgentCount")),
   };
 
   try {
     const res = await fetch("/api/design", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
     });
 
     if (!res.ok) {
-      const data = await res.json();
-      throw new Error(data.error ?? `설계 실패: ${res.status}`);
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.error || `서버 오류 (${res.status})`);
     }
 
     const reader = res.body.getReader();
@@ -197,167 +255,294 @@ designBtn.addEventListener("click", async () => {
           const event = JSON.parse(line);
 
           if (event.type === "step") {
-            statusEl.innerHTML = escapeHtml(event.message);
-            logContainer.innerHTML += `<div class="log-entry"><strong>[STEP]</strong> ${escapeHtml(event.message)}</div>`;
-          } else if (event.type === "log") {
-            const rolePrefix = event.role ? `<span class="log-role">[${escapeHtml(event.role)}]</span> ` : "";
-            logContainer.innerHTML += `<div class="log-entry">${rolePrefix}${escapeHtml(event.content)}</div>`;
-            logContainer.scrollTop = logContainer.scrollHeight;
-          } else if (event.type === "result") {
-            const data = event.data;
-            currentDesignId = data.designId;
-            buildBtn.disabled = false;
-            statusEl.innerHTML = "✅ 설계 완료!";
+            // Translate step messages to friendlier Korean
+            const friendly = friendlyStep(event.message);
+            meetingStatus.textContent = friendly;
+            addLog(friendly);
 
-            const simplified = simplifyBlueprint(data.systemBlueprint);
-            const resultHtml = `
-              <hr style="margin: 20px 0; border: 0; border-top: 1px solid #ddd;">
-              <p><strong>Design ID:</strong> ${escapeHtml(data.designId)}</p>
-              <div class="status ok">
-                <strong>비개발자용 핵심 요약</strong>
-                <ul>
-                  <li>핵심 기능 묶음: ${escapeHtml(simplified.componentNames.join(" / ") || "설계 데이터 확인 필요")}</li>
-                  <li>우선 점검 리스크: ${escapeHtml(simplified.riskNames.join(" / ") || "리스크 항목 없음")}</li>
-                  <li>다음 실행 단계: ${escapeHtml(simplified.milestoneNames.join(" → ") || "마일스톤 항목 없음")}</li>
-                </ul>
-              </div>
-              <details>
-                <summary>지금 바로 할 일 (추천)</summary>
-                <ol>
-                  <li>"구축 요청"을 눌러 산출물을 생성한다.</li>
-                  <li>생성된 구축 계획에서 기간/비용 가정을 검토한다.</li>
-                  <li>채팅에서 에이전트에게 "오늘 해야 할 작업 3개"를 요청한다.</li>
-                </ol>
-              </details>
-              <h3>1차 에이전트 의견</h3>
-              ${data.opinions
-                .map(
-                  (op) => `<details><summary>${escapeHtml(op.role)}</summary>
-                    <pre>입장: ${escapeHtml(op.stance)}\n\n우선순위:\n- ${escapeHtml(op.priorities.join("\n- "))}\n\n반대/우려:\n- ${escapeHtml(op.objections.join("\n- "))}</pre></details>`
-                )
-                .join("")}
-              <h3>2차 상호토론</h3>
-              ${data.debateRound
-                .map(
-                  (d) => `<details><summary>${escapeHtml(d.role)}</summary><pre>반박/조정: ${escapeHtml(d.rebuttal)}\n\n업데이트 우선순위:\n- ${escapeHtml(d.updatedPriorities.join("\n- "))}</pre></details>`
-                )
-                .join("")}
-              <h3>최종 합의안</h3>
-              <pre>${escapeHtml(data.consensusSummary)}</pre>
-              <h3>시스템 블루프린트</h3>
-              <pre>${escapeHtml(JSON.stringify(data.systemBlueprint, null, 2))}</pre>
-            `;
-            const resultContainer = document.createElement("div");
-            resultContainer.innerHTML = resultHtml;
-            designOutput.appendChild(resultContainer);
+          } else if (event.type === "log") {
+            highlightAgent(event.role);
+            addLog(event.content, event.role);
+
+          } else if (event.type === "result") {
+            currentDesignId = event.data.designId;
+            renderDesignResult(event.data);
+
           } else if (event.type === "error") {
             throw new Error(event.message);
           }
         } catch (e) {
-          console.error("Error parsing stream:", e);
+          if (e.message !== "Unexpected end of JSON input") {
+            console.error("Stream parse error:", e);
+          }
         }
       }
     }
   } catch (err) {
-    designOutput.innerHTML += `<div class="status warn"><pre>Error: ${escapeHtml(String(err))}</pre></div>`;
-  } finally {
+    meetingStatus.textContent = "⚠️ 오류가 발생했습니다";
+    addLog(`오류: ${err.message}`);
     designBtn.disabled = false;
+    designBtn.innerHTML = '<i class="fas fa-redo"></i> 다시 시도하기';
   }
 });
 
+function friendlyStep(msg) {
+  // Make orchestrator step messages more accessible
+  if (msg.includes("시스템 설계를 시작")) return "🚀 AI 설계를 시작합니다...";
+  if (msg.includes("전문 에이전트를 소집")) return `👥 AI 전문가 팀을 구성하고 있습니다...`;
+  if (msg.includes("1차 의견 수집")) return "🧠 각 전문가가 아이디어를 분석하고 있습니다...";
+  if (msg.includes("2차 상호 토론")) return "🔥 전문가들이 서로 의견을 나누며 토론 중입니다...";
+  if (msg.includes("최종 합의 도출")) return "🤝 모든 의견을 종합하여 결론을 내리고 있습니다...";
+  if (msg.includes("블루프린트 설계")) return "📐 최종 설계도를 작성하고 있습니다...";
+  return msg;
+}
+
+// ═══════════════════════════════════════
+// Render Design Result
+// ═══════════════════════════════════════
+function renderDesignResult(data) {
+  highlightAgent(null);
+  meetingStatus.textContent = "✅ 회의 완료!";
+  designBtn.innerHTML = '<i class="fas fa-check"></i> 설계 완료';
+
+  // --- Map backend SystemBlueprint fields ---
+  // Backend: { architecture, agentTopology, coreFlows[], riskControls[] }
+  const bp = data.systemBlueprint || {};
+
+  const coreFlowsHtml = (bp.coreFlows || [])
+    .map((f) => `<li>${esc(f)}</li>`)
+    .join("");
+
+  const riskHtml = (bp.riskControls || [])
+    .map((r) => `<span class="tag warn">${esc(r)}</span>`)
+    .join("");
+
+  // Opinions summary
+  const opinionsHtml = (data.opinions || [])
+    .map(
+      (op) => `
+      <details class="expand-section">
+        <summary>${displayRole(op.role)} — ${esc(op.stance?.slice(0, 60))}${op.stance?.length > 60 ? "..." : ""}</summary>
+        <div class="expand-content">
+<strong>핵심 입장:</strong> ${esc(op.stance)}
+
+<strong>우선순위:</strong>
+${(op.priorities || []).map((p) => `• ${esc(p)}`).join("\n")}
+
+<strong>우려 사항:</strong>
+${(op.objections || []).map((o) => `• ${esc(o)}`).join("\n")}
+        </div>
+      </details>`
+    )
+    .join("");
+
+  // Debate summary
+  const debateHtml = (data.debateRound || [])
+    .map(
+      (d) => `
+      <details class="expand-section">
+        <summary>${displayRole(d.role)} — 토론 결과</summary>
+        <div class="expand-content">
+<strong>반박/조정 의견:</strong>
+${esc(d.rebuttal)}
+
+<strong>수정된 우선순위:</strong>
+${(d.updatedPriorities || []).map((p) => `• ${esc(p)}`).join("\n")}
+        </div>
+      </details>`
+    )
+    .join("");
+
+  designResult.innerHTML = `
+    <div class="result-banner">
+      <h3>🎉 설계 합의가 완료되었습니다</h3>
+      <p>${esc(data.consensusSummary?.slice(0, 200))}${data.consensusSummary?.length > 200 ? "..." : ""}</p>
+    </div>
+
+    <div class="result-grid">
+      <div class="result-box">
+        <div class="result-box-title"><i class="fas fa-sitemap"></i> 시스템 구조</div>
+        <p style="font-size: 0.88rem; color: var(--text-muted); line-height: 1.6;">${esc(bp.architecture || "분석 결과 없음")}</p>
+      </div>
+      <div class="result-box">
+        <div class="result-box-title"><i class="fas fa-project-diagram"></i> 핵심 동작 흐름</div>
+        <ul>${coreFlowsHtml || "<li>분석 결과 없음</li>"}</ul>
+      </div>
+    </div>
+
+    <div class="result-box" style="margin-bottom: 16px;">
+      <div class="result-box-title"><i class="fas fa-shield-alt"></i> 리스크 관리 방안</div>
+      <div class="tag-cloud">${riskHtml || '<span class="tag">식별된 주요 리스크 없음</span>'}</div>
+    </div>
+
+    <details class="expand-section" style="margin-bottom: 8px;">
+      <summary>📋 전체 합의 내용 보기</summary>
+      <div class="expand-content">${esc(data.consensusSummary)}</div>
+    </details>
+
+    <details class="expand-section" style="margin-bottom: 8px;">
+      <summary>🧠 전문가별 1차 의견 보기</summary>
+      <div class="expand-content" style="padding: 0;">${opinionsHtml}</div>
+    </details>
+
+    <details class="expand-section" style="margin-bottom: 8px;">
+      <summary>🔥 2차 토론 결과 보기</summary>
+      <div class="expand-content" style="padding: 0;">${debateHtml}</div>
+    </details>
+  `;
+
+  designResult.classList.add("visible");
+  buildBtn.disabled = false;
+  setTimeout(() => buildBtn.scrollIntoView({ behavior: "smooth", block: "center" }), 200);
+}
+
+// ═══════════════════════════════════════
+// BUILD FLOW
+// ═══════════════════════════════════════
 buildBtn.addEventListener("click", async () => {
   if (!currentDesignId) return;
+
+  setStep(3);
+  buildCard.style.display = "block";
+  buildStatus.classList.add("visible");
+  buildStatus.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 구축 진행 중... 잠시만 기다려주세요.';
+  buildOutput.classList.remove("visible");
+  chatInterface.classList.remove("visible");
+
   buildBtn.disabled = true;
-  buildOutput.innerHTML = "구축 중... 구현 에이전트들이 산출물을 생성 중입니다.";
+  buildBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 구축 중...';
+  setTimeout(() => buildCard.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
 
   try {
     const res = await fetch(`/api/build/${currentDesignId}`, { method: "POST" });
     const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "구축 실패");
 
-    if (!res.ok) {
-      throw new Error(data.error ?? `구축 실패: ${res.status}`);
-    }
+    // --- Success ---
+    buildStatus.innerHTML = `<i class="fas fa-check-circle" style="color: var(--success);"></i> 구축 완료! (${esc(data.timestamp)})`;
+    buildBtn.innerHTML = '<i class="fas fa-check"></i> 구축 완료됨';
 
-    const agentCard = document.getElementById("agentCard");
-    const agentSelect = document.getElementById("agentSelect");
-    const chatHistory = document.getElementById("chatHistory");
-    const chatInput = document.getElementById("chatInput");
-    const sendChatBtn = document.getElementById("sendChatBtn");
+    // Build output
+    const artifactsHtml = (data.generatedArtifacts || [])
+      .map(
+        (a) => `
+      <details class="expand-section">
+        <summary><i class="fas fa-file-code"></i> ${esc(a.name)}</summary>
+        <div class="expand-content">${esc(a.content)}</div>
+      </details>`
+      )
+      .join("");
 
-    agentSelect.innerHTML = "";
-    if (data.agentPrompts) {
-      Object.keys(data.agentPrompts).forEach((role) => {
-        const option = document.createElement("option");
-        option.value = role;
-        option.textContent = role;
-        agentSelect.appendChild(option);
-      });
-      agentCard.style.display = "block";
-    }
+    const checklistHtml = (data.operationsChecklist || [])
+      .map((item) => `<li>${esc(item)}</li>`)
+      .join("");
 
     buildOutput.innerHTML = `
-      <p><strong>Timestamp:</strong> ${escapeHtml(data.timestamp)}</p>
-      <p><strong>Output Directory:</strong> ${escapeHtml(data.outputDirectory)}</p>
-      <div class="status ok">✅ 에이전트 구축 완료! 아래 채팅창에서 바로 업무를 지시하세요.</div>
-      <details>
-        <summary>비개발자 실행 가이드</summary>
-        <ol>
-          <li>"구축 계획"에서 일정/역할을 확인합니다.</li>
-          <li>"생성 산출물"의 내용을 복사해 팀/외주에게 공유합니다.</li>
-          <li>채팅에서 "내일 데모 준비 체크리스트"를 요청해 실행합니다.</li>
-        </ol>
+      <div class="build-success-box">
+        <div class="big-icon"><i class="fas fa-check-circle"></i></div>
+        <h3>프로젝트 파일이 생성되었습니다!</h3>
+        <div class="dir-path">${esc(data.outputDirectory)}</div>
+        <p>위 경로에서 결과물을 확인할 수 있습니다.</p>
+      </div>
+
+      <details class="expand-section" style="margin-bottom: 8px;">
+        <summary>📋 구축 계획서 보기</summary>
+        <div class="expand-content">${esc(data.buildPlan)}</div>
       </details>
-      <h3>구축 계획</h3>
-      <pre>${escapeHtml(data.buildPlan)}</pre>
-      <h3>생성 산출물</h3>
-      ${data.generatedArtifacts
-        .map((a) => `<details><summary>${escapeHtml(a.name)}</summary><pre>${escapeHtml(a.content)}</pre></details>`)
-        .join("")}
-      <h3>운영 체크리스트</h3>
-      <ul>${data.operationsChecklist.map((i) => `<li>${escapeHtml(i)}</li>`).join("")}</ul>
+
+      ${artifactsHtml}
+
+      <details class="expand-section" style="margin-bottom: 8px;">
+        <summary>✅ 운영 체크리스트 (${data.operationsChecklist?.length || 0}개 항목)</summary>
+        <div class="expand-content"><ul style="padding-left: 18px;">${checklistHtml}</ul></div>
+      </details>
     `;
+    buildOutput.classList.add("visible");
 
-    sendChatBtn.onclick = async () => {
-      const role = agentSelect.value;
-      const message = chatInput.value;
-      if (!message) return;
+    // --- Setup Chat ---
+    agentSelect.innerHTML = '<option value="">대화 상대 선택</option>';
+    if (data.agentPrompts) {
+      Object.keys(data.agentPrompts).forEach((role) => {
+        const opt = document.createElement("option");
+        opt.value = role;
+        opt.textContent = ROLE_MAP[role]?.ko || role;
+        agentSelect.appendChild(opt);
+      });
+    }
+    chatInterface.classList.add("visible");
+    setTimeout(() => chatInterface.scrollIntoView({ behavior: "smooth", block: "start" }), 300);
 
-      chatHistory.innerHTML += `<div style="text-align: right; margin-bottom: 8px;">
-        <span style="background: #007bff; color: white; padding: 6px 10px; border-radius: 12px; display: inline-block;">${escapeHtml(message)}</span>
-      </div>`;
-      chatInput.value = "";
-      chatHistory.scrollTop = chatHistory.scrollHeight;
-
-      const loadingId = "loading-" + Date.now();
-      chatHistory.innerHTML += `<div id="${loadingId}" style="text-align: left; margin-bottom: 8px;">
-        <span style="background: #f1f1f1; padding: 6px 10px; border-radius: 12px; display: inline-block; color: #555;">Typing...</span>
-      </div>`;
-      chatHistory.scrollTop = chatHistory.scrollHeight;
-
-      try {
-        const res = await fetch(`/api/chat/${currentDesignId}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ designId: currentDesignId, role, message })
-        });
-        const data = await res.json();
-
-        document.getElementById(loadingId).remove();
-
-        if (data.error) throw new Error(data.error);
-
-        chatHistory.innerHTML += `<div style="text-align: left; margin-bottom: 8px;">
-          <small style="display:block; color: #888; margin-bottom: 2px;">${escapeHtml(role)}</small>
-          <span style="background: #e9ecef; padding: 8px 12px; border-radius: 12px; display: inline-block;">${escapeHtml(data.response)}</span>
-        </div>`;
-      } catch (err) {
-        document.getElementById(loadingId).innerText = "Error: " + err.message;
-      }
-      chatHistory.scrollTop = chatHistory.scrollHeight;
-    };
   } catch (err) {
-    buildOutput.innerHTML = `<pre>${escapeHtml(String(err))}</pre>`;
-  } finally {
+    buildStatus.innerHTML = `<i class="fas fa-times-circle" style="color: var(--danger);"></i> 오류: ${esc(err.message)}`;
     buildBtn.disabled = false;
+    buildBtn.innerHTML = '<i class="fas fa-redo"></i> 다시 시도하기';
   }
 });
+
+// ═══════════════════════════════════════
+// CHAT LOGIC
+// ═══════════════════════════════════════
+sendChatBtn.addEventListener("click", sendMessage);
+chatInput.addEventListener("keypress", (e) => {
+  if (e.key === "Enter") sendMessage();
+});
+
+async function sendMessage() {
+  const role = agentSelect.value;
+  const text = chatInput.value.trim();
+
+  if (!role) {
+    // Flash the select
+    agentSelect.style.borderColor = "var(--danger)";
+    setTimeout(() => (agentSelect.style.borderColor = ""), 1500);
+    return;
+  }
+  if (!text) return;
+
+  addChatMessage(text, "user");
+  chatInput.value = "";
+
+  const loadingId = "msg-loading-" + Date.now();
+  addChatMessage("입력 중...", "agent", loadingId, role);
+
+  try {
+    const res = await fetch(`/api/chat/${currentDesignId}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ designId: currentDesignId, role, message: text }),
+    });
+    const data = await res.json();
+
+    const loader = $(loadingId);
+    if (loader) loader.remove();
+
+    if (data.error) throw new Error(data.error);
+    addChatMessage(data.response, "agent", null, role);
+
+  } catch (err) {
+    const loader = $(loadingId);
+    if (loader) {
+      loader.querySelector(".agent-msg-role").textContent = "오류";
+      loader.childNodes[loader.childNodes.length - 1].textContent = err.message;
+    }
+  }
+}
+
+function addChatMessage(text, type, id = null, role = null) {
+  const div = document.createElement("div");
+  div.className = `message ${type}`;
+  if (id) div.id = id;
+
+  if (type === "agent" && role) {
+    const roleLabel = document.createElement("div");
+    roleLabel.className = "agent-msg-role";
+    roleLabel.textContent = ROLE_MAP[role]?.ko || role;
+    div.appendChild(roleLabel);
+  }
+
+  const textNode = document.createTextNode(text);
+  div.appendChild(textNode);
+
+  chatHistory.appendChild(div);
+  chatHistory.scrollTop = chatHistory.scrollHeight;
+}

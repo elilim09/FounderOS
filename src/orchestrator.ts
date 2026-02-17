@@ -95,13 +95,13 @@ export async function designMultiAgentSystem(
   input: UserIdeaInput,
   onProgress: (progress: DesignProgress) => void
 ): Promise<DesignResult> {
-  onProgress({ type: "step", message: "🚀 멀티 에이전트 시스템 설계를 시작합니다..." });
+  onProgress({ type: "step", message: "🚀 AI 설계를 시작합니다..." });
   const roles = pickRoles(input.requestedAgentCount);
 
-  onProgress({ type: "step", message: `👥 ${roles.length}명의 전문 에이전트를 소집했습니다: ${roles.join(", ")}` });
+  onProgress({ type: "step", message: `👥 ${roles.length}명의 AI 전문가를 소집하고 있습니다...` });
 
   // 1. Collect Opinions
-  onProgress({ type: "step", message: "🧠 1차 의견 수집 중: 각 에이전트가 아이디어를 분석하고 있습니다..." });
+  onProgress({ type: "step", message: "🧠 1차 의견 수집 중: 각 전문가가 아이디어를 분석하고 있습니다..." });
   const opinions = await Promise.all(
     roles.map(async (role) => {
       onProgress({ type: "log", role, content: "분석 시작..." });
@@ -112,10 +112,10 @@ export async function designMultiAgentSystem(
   );
 
   // 2. Debate
-  onProgress({ type: "step", message: "🔥 2차 상호 토론 중: 에이전트들이 서로의 의견을 검토하고 논쟁합니다..." });
+  onProgress({ type: "step", message: "🔥 2차 상호 토론 중: 전문가들이 서로의 의견을 검토하고 논의합니다..." });
   const debateRound = await Promise.all(
     roles.map(async (role) => {
-      onProgress({ type: "log", role, content: "타 에이전트 의견 검토 및 반박 준비 중..." });
+      onProgress({ type: "log", role, content: "다른 전문가 의견을 검토하고 응답을 준비 중..." });
       const debateResult = await debate(input, role, opinions);
       onProgress({ type: "log", role, content: "토론 의견 제출 완료" });
       return debateResult;
@@ -128,9 +128,9 @@ export async function designMultiAgentSystem(
   onProgress({ type: "log", content: "최종 합의안 작성 완료" });
 
   // 4. Blueprint
-  onProgress({ type: "step", message: "📐 시스템 블루프린트 설계 중: 아키텍처와 리스크 관리 방안을 수립합니다..." });
+  onProgress({ type: "step", message: "📐 최종 설계도 작성 중: 시스템 구조와 리스크 관리 방안을 수립합니다..." });
   const systemBlueprint = await createBlueprint(input, consensusSummary);
-  onProgress({ type: "log", content: "블루프린트 생성 완료" });
+  onProgress({ type: "log", content: "설계도 작성 완료" });
 
   const result: DesignResult = {
     designId: randomUUID(),

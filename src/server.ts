@@ -39,7 +39,7 @@ app.post("/api/design", async (req, res) => {
       .flatMap(([field, messages]) => (messages ?? []).map((message) => `${field}: ${message}`))
       .join(" | ");
     return res.status(400).json({
-      error: summary || "입력값이 올바르지 않습니다. 각 항목을 다시 확인해 주세요.",
+      error: summary || "입력 내용을 다시 한번 확인해 주세요. 빈 칸이 있거나 너무 짧은 항목이 있을 수 있습니다.",
       fieldErrors
     });
   }
@@ -65,7 +65,7 @@ app.post("/api/design", async (req, res) => {
 app.post("/api/build/:designId", async (req, res) => {
   const design = getDesign(req.params.designId);
   if (!design) {
-    return res.status(404).json({ error: "design not found" });
+    return res.status(404).json({ error: "해당 설계를 찾을 수 없습니다. 먼저 설계를 실행해주세요." });
   }
 
   try {
@@ -73,7 +73,7 @@ app.post("/api/build/:designId", async (req, res) => {
     saveBuild(build);
     return res.json(build);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "failed to build";
+    const message = error instanceof Error ? error.message : "구축 중 문제가 발생했습니다. 다시 시도해주세요.";
     const status = message.includes("OPENAI_API_KEY") ? 503 : 500;
     return res.status(status).json({ error: message });
   }
@@ -82,7 +82,7 @@ app.post("/api/build/:designId", async (req, res) => {
 app.get("/api/design/:designId", (req, res) => {
   const design = getDesign(req.params.designId);
   if (!design) {
-    return res.status(404).json({ error: "design not found" });
+    return res.status(404).json({ error: "해당 설계를 찾을 수 없습니다." });
   }
   return res.json(design);
 });
@@ -90,7 +90,7 @@ app.get("/api/design/:designId", (req, res) => {
 app.get("/api/build/:designId", (req, res) => {
   const build = getBuild(req.params.designId);
   if (!build) {
-    return res.status(404).json({ error: "build not found" });
+    return res.status(404).json({ error: "해당 구축 결과를 찾을 수 없습니다." });
   }
   return res.json(build);
 });
@@ -100,10 +100,10 @@ app.post("/api/chat/:designId", async (req, res) => {
   const { role, message } = req.body;
 
   const build = getBuild(designId);
-  if (!build) return res.status(404).json({ error: "Build not found" });
+  if (!build) return res.status(404).json({ error: "구축 결과를 먼저 생성해주세요." });
 
   const systemPrompt = build.agentPrompts?.[role];
-  if (!systemPrompt) return res.status(400).json({ error: "Agent role not found" });
+  if (!systemPrompt) return res.status(400).json({ error: "해당 전문가를 찾을 수 없습니다." });
 
   try {
     const response = await generateText(systemPrompt, message);
