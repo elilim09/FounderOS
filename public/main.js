@@ -477,6 +477,10 @@ buildBtn.addEventListener("click", async () => {
     persistWorkspaceContext({
       outputDirectory: data.outputDirectory,
       buildTimestamp: data.timestamp,
+      buildPlan: data.buildPlan,
+      generatedArtifacts: data.generatedArtifacts,
+      operationsChecklist: data.operationsChecklist,
+      agentPrompts: data.agentPrompts,
     });
 
     // --- Setup Chat ---
@@ -502,7 +506,7 @@ buildBtn.addEventListener("click", async () => {
 buildCard.addEventListener("click", (event) => {
   const button = event.target.closest("#openWorkspaceBtn");
   if (!button) return;
-  window.location.href = "/workspace.html";
+  window.location.href = "/studio.html";
 });
 
 // ═══════════════════════════════════════

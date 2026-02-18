@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="ko">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FounderOS — 개인 작업실 스튜디오</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <style>
+    :root {
+      --bg: #0b1221;
+      --card: rgba(20, 30, 52, 0.76);
+      --line: rgba(148, 163, 184, 0.25);
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --primary: #6366f1;
+      --accent: #22d3ee;
+      --warn: #f59e0b;
+      --danger: #ef4444;
+      --ok: #10b981;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 10% 0%, rgba(99, 102, 241, 0.25), transparent 40%),
+        radial-gradient(circle at 90% 90%, rgba(34, 211, 238, 0.15), transparent 40%),
+        var(--bg);
+      font-family: Inter, system-ui, sans-serif;
+    }
+
+    .wrap { max-width: 1320px; margin: 0 auto; padding: 24px 16px 60px; }
+    .top { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; align-items: flex-start; }
+    .title h1 { margin: 0; font-size: 1.75rem; }
+    .title p { margin: 8px 0 0; color: var(--muted); }
+
+    .btn {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: rgba(11, 18, 33, 0.7);
+      color: var(--text);
+      padding: 9px 13px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .btn.primary { background: var(--primary); border-color: transparent; }
+    .btn.warn { background: rgba(245, 158, 11, 0.15); color: #fcd34d; }
+
+    .grid { margin-top: 16px; display: grid; grid-template-columns: repeat(12, 1fr); gap: 12px; }
+    .card {
+      grid-column: span 12;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: var(--card);
+      backdrop-filter: blur(8px);
+      padding: 14px;
+    }
+
+    .card h2 { margin: 0 0 10px; font-size: 1rem; display: flex; gap: 8px; align-items: center; }
+    .kpi { grid-column: span 3; }
+    .half { grid-column: span 6; }
+    .third { grid-column: span 4; }
+    .big { font-size: 1.6rem; font-weight: 800; }
+    .muted { color: var(--muted); font-size: 0.86rem; }
+
+    .row { display: flex; gap: 8px; flex-wrap: wrap; }
+    input, select, textarea {
+      flex: 1;
+      min-width: 140px;
+      color: var(--text);
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px;
+      font: inherit;
+    }
+
+    textarea { width: 100%; min-height: 68px; }
+
+    .list { display: flex; flex-direction: column; gap: 8px; max-height: 280px; overflow: auto; }
+    .item {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 9px;
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      align-items: flex-start;
+    }
+
+    .pill { border-radius: 999px; padding: 3px 8px; font-size: 0.75rem; border: 1px solid transparent; }
+    .todo { background: rgba(245, 158, 11, 0.2); color: #fcd34d; }
+    .doing { background: rgba(99, 102, 241, 0.25); color: #c7d2fe; }
+    .done { background: rgba(16, 185, 129, 0.2); color: #6ee7b7; }
+    .risk-low { color: #6ee7b7; }
+    .risk-mid { color: #fcd34d; }
+    .risk-high { color: #fca5a5; }
+
+    .agent-chip {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 8px 9px;
+      min-width: 170px;
+      background: rgba(11, 18, 33, 0.5);
+    }
+
+    .agent-chip strong { display: block; font-size: 0.9rem; }
+    .agent-chip span { color: var(--muted); font-size: 0.8rem; }
+
+    details summary { cursor: pointer; color: #cbd5e1; font-weight: 600; }
+
+    @media (max-width: 960px) {
+      .kpi, .half, .third { grid-column: span 12; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <header class="top">
+      <div class="title">
+        <h1>🧭 개인 작업실 (멀티 에이전트 운영)</h1>
+        <p id="projectInfo">구축 완료 데이터를 기반으로 오늘 바로 실행할 수 있도록 구성된 운영실입니다.</p>
+      </div>
+      <div class="row">
+        <button id="exportStudio" class="btn">내보내기</button>
+        <button id="resetStudio" class="btn warn">작업실 초기화</button>
+        <a href="/" class="btn">설계 화면</a>
+      </div>
+    </header>
+
+    <main class="grid">
+      <section class="card kpi">
+        <h2><i class="fas fa-list-check"></i>우선 작업 진행률</h2>
+        <div id="taskProgress" class="big">0%</div>
+        <div id="taskProgressSub" class="muted">0/0 완료</div>
+      </section>
+      <section class="card kpi">
+        <h2><i class="fas fa-gauge-high"></i>멀티 에이전트 상태</h2>
+        <div id="agentReadiness" class="big">준비중</div>
+        <div id="agentReadinessSub" class="muted">역할 프롬프트 분석 기준</div>
+      </section>
+      <section class="card kpi">
+        <h2><i class="fas fa-triangle-exclamation"></i>운영 경고</h2>
+        <div id="alertCount" class="big">0건</div>
+        <div id="alertSub" class="muted">고위험+보류 핸드오프</div>
+      </section>
+      <section class="card kpi">
+        <h2><i class="fas fa-wallet"></i>런웨이</h2>
+        <div id="runway" class="big">0개월</div>
+        <div id="runwaySub" class="muted">순소진 0원/월</div>
+      </section>
+
+      <section class="card half">
+        <h2><i class="fas fa-user-gear"></i>에이전트 운영 보드</h2>
+        <div class="row" id="agentBoard"></div>
+        <p class="muted">구축에 포함된 에이전트를 운영 담당자로 자동 등록합니다.</p>
+      </section>
+
+      <section class="card half">
+        <h2><i class="fas fa-people-arrows"></i>핸드오프 큐</h2>
+        <div class="row" style="margin-bottom:8px;">
+          <input id="handoffTask" placeholder="핸드오프 작업명" />
+          <select id="handoffFrom"></select>
+          <select id="handoffTo"></select>
+          <select id="handoffState">
+            <option value="pending">대기</option>
+            <option value="in_progress">진행중</option>
+            <option value="blocked">차단</option>
+            <option value="done">완료</option>
+          </select>
+          <button id="addHandoff" class="btn primary">등록</button>
+        </div>
+        <div id="handoffList" class="list"></div>
+      </section>
+
+      <section class="card third">
+        <h2><i class="fas fa-bolt"></i>즉시 실행 백로그</h2>
+        <div class="row" style="margin-bottom:8px;">
+          <input id="taskTitle" placeholder="작업명" />
+          <select id="taskStatus">
+            <option value="todo">할 일</option>
+            <option value="doing">진행중</option>
+            <option value="done">완료</option>
+          </select>
+          <button id="addTask" class="btn primary">추가</button>
+        </div>
+        <div id="taskList" class="list"></div>
+      </section>
+
+      <section class="card third">
+        <h2><i class="fas fa-shield-heart"></i>리스크 레지스터</h2>
+        <div class="row" style="margin-bottom:8px;">
+          <input id="riskTitle" placeholder="리스크" />
+          <select id="riskLevel">
+            <option value="low">낮음</option>
+            <option value="mid">중간</option>
+            <option value="high">높음</option>
+          </select>
+          <input id="riskMitigation" placeholder="대응" />
+          <button id="addRisk" class="btn primary">추가</button>
+        </div>
+        <div id="riskList" class="list"></div>
+      </section>
+
+      <section class="card third">
+        <h2><i class="fas fa-signal"></i>OKR + 인터뷰</h2>
+        <div class="row" style="margin-bottom:8px;">
+          <input id="okrObjective" placeholder="Objective" />
+          <input id="okrKeyResult" placeholder="Key Result" />
+          <input id="okrProgress" type="number" min="0" max="100" placeholder="%" />
+          <button id="addOkr" class="btn primary">OKR 추가</button>
+        </div>
+        <div id="okrList" class="list" style="margin-bottom:10px;"></div>
+
+        <div class="row" style="margin-bottom:8px;">
+          <input id="interviewPerson" placeholder="인터뷰 대상" />
+          <input id="interviewPain" placeholder="핵심 인사이트" />
+          <button id="addInterview" class="btn primary">인터뷰 기록</button>
+        </div>
+        <div id="interviewList" class="list"></div>
+      </section>
+
+      <section class="card half">
+        <h2><i class="fas fa-file-lines"></i>구축 결과 기반 운영 Runbook</h2>
+        <details open>
+          <summary>구축 계획 / 운영 체크리스트</summary>
+          <div id="buildRunbook" class="muted"></div>
+        </details>
+        <details>
+          <summary>생성된 아티팩트 미리보기</summary>
+          <div id="artifactList" class="list"></div>
+        </details>
+      </section>
+
+      <section class="card half">
+        <h2><i class="fas fa-coins"></i>자금 시뮬레이터 & 운영 메모</h2>
+        <div class="row" style="margin-bottom:8px;">
+          <input id="cash" type="number" min="0" placeholder="보유 현금(원)" />
+          <input id="monthlyBurn" type="number" min="1" placeholder="월 소진(원)" />
+          <input id="monthlyRevenue" type="number" min="0" placeholder="월 매출(원)" />
+          <button id="saveFinance" class="btn primary">계산</button>
+        </div>
+        <textarea id="operationMemo" placeholder="오늘 결정한 운영 정책, 에이전트 규칙, 실패 로그 등을 기록하세요."></textarea>
+        <div class="row" style="margin-top:8px;">
+          <button id="saveMemo" class="btn">메모 저장</button>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script type="module" src="/studio.js"></script>
+</body>
+
+</html>
