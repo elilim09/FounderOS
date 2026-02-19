@@ -990,14 +990,9 @@
       </div>
 
       <div class="form-group">
-        <label for="requestedAgentCount">AI 전문가 팀 규모</label>
-        <select id="requestedAgentCount">
-          <option value="2">2명 — 빠른 분석</option>
-          <option value="3" selected>3명 — 권장: 빠르면서 균형 잡힌 토론</option>
-          <option value="4">4명 — 깊이 있는 분석</option>
-          <option value="5">5명 — 다양한 시각</option>
-          <option value="6">6명 — 최대 규모 (시간 소요 큼)</option>
-        </select>
+        <label for="requestedAgentCount">운영 에이전트 수 (최대 100)</label>
+        <input id="requestedAgentCount" type="number" min="2" max="100" value="12" />
+        <p class="form-hint">이 값은 설계/구축용 에이전트가 아니라, 실제 운영 조직에서 자율 실행할 운영 에이전트 수입니다.</p>
       </div>
 
       <div id="inputValidation" class="validation-msg"></div>

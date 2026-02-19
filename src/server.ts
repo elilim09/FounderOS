@@ -20,7 +20,7 @@ const designInputSchema = z.object({
   targetCustomer: z.string().min(2),
   constraints: z.string().min(2),
   additionalContext: z.string().optional(),
-  requestedAgentCount: z.number().int().min(2).max(6)
+  requestedAgentCount: z.coerce.number().int().min(2).max(100)
 });
 
 app.get("/api/health", (_req, res) => {
