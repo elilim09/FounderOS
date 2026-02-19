@@ -1,10 +1,4 @@
-export type AgentRole =
-  | "MarketAnalyst"
-  | "ProductStrategist"
-  | "TechArchitect"
-  | "OperationsDesigner"
-  | "GrowthPlanner"
-  | "ImplementationLead";
+export type AgentRole = string;
 
 export interface UserIdeaInput {
   startupName: string;
@@ -28,11 +22,19 @@ export interface AgentDebate {
   updatedPriorities: string[];
 }
 
+export interface OperatingAgent {
+  role: AgentRole;
+  tier: "Executive" | "Management" | "Operation";
+  mission: string;
+  reportsTo?: AgentRole;
+}
+
 export interface SystemBlueprint {
   architecture: string;
   agentTopology: string;
   coreFlows: string[];
   riskControls: string[];
+  operatingHierarchy: OperatingAgent[];
 }
 
 export interface DesignResult {

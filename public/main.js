@@ -205,6 +205,10 @@ designBtn.addEventListener("click", async () => {
   if (val("problem").length < 5) errors.push("해결하려는 문제를 조금 더 자세히 적어주세요.");
   if (val("targetCustomer").length < 2) errors.push("대상 고객을 입력해주세요.");
   if (val("constraints").length < 2) errors.push("제약 사항을 입력해주세요.");
+  const requestedAgentCount = Number(val("requestedAgentCount"));
+  if (!Number.isFinite(requestedAgentCount) || requestedAgentCount < 2 || requestedAgentCount > 100) {
+    errors.push("운영 에이전트 수는 2~100 사이 숫자로 입력해주세요.");
+  }
 
   if (errors.length > 0) {
     inputValidation.innerHTML = errors.map((e) => `• ${e}`).join("<br>");
@@ -223,7 +227,7 @@ designBtn.addEventListener("click", async () => {
   designResult.classList.remove("visible");
   agentGrid.innerHTML = "";
   logContainer.innerHTML = "";
-  meetingStatus.textContent = "AI 전문가들이 회의실에 입장하고 있습니다...";
+  meetingStatus.textContent = "계층형 AI 운영 조직이 회의실에 입장하고 있습니다...";
 
   setTimeout(() => designCard.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
 
@@ -233,7 +237,7 @@ designBtn.addEventListener("click", async () => {
     targetCustomer: val("targetCustomer"),
     constraints: val("constraints"),
     additionalContext: val("additionalContext"),
-    requestedAgentCount: Number(val("requestedAgentCount")),
+    requestedAgentCount,
   };
 
   try {
@@ -300,6 +304,8 @@ designBtn.addEventListener("click", async () => {
 function friendlyStep(msg) {
   // Make orchestrator step messages more accessible
   if (msg.includes("시스템 설계를 시작")) return "🚀 AI 설계를 시작합니다...";
+  if (msg.includes("계층형 운영 조직")) return "🏢 회사형 계층 구조의 운영 조직을 설계하고 있습니다...";
+  if (msg.includes("운영 에이전트와")) return "👥 운영 에이전트와 전략 위원회를 편성하고 있습니다...";
   if (msg.includes("전문 에이전트를 소집")) return `👥 AI 전문가 팀을 구성하고 있습니다...`;
   if (msg.includes("1차 의견 수집")) return "🧠 각 전문가가 아이디어를 분석하고 있습니다...";
   if (msg.includes("2차 상호 토론")) return "🔥 전문가들이 서로 의견을 나누며 토론 중입니다...";
@@ -319,6 +325,7 @@ function renderDesignResult(data) {
   // --- Map backend SystemBlueprint fields ---
   // Backend: { architecture, agentTopology, coreFlows[], riskControls[] }
   const bp = data.systemBlueprint || {};
+  const hierarchy = Array.isArray(bp.operatingHierarchy) ? bp.operatingHierarchy : [];
 
   const coreFlowsHtml = (bp.coreFlows || [])
     .map((f) => `<li>${esc(f)}</li>`)
@@ -326,6 +333,11 @@ function renderDesignResult(data) {
 
   const riskHtml = (bp.riskControls || [])
     .map((r) => `<span class="tag warn">${esc(r)}</span>`)
+    .join("");
+
+  const hierarchyHtml = hierarchy
+    .slice(0, 24)
+    .map((agent) => `<li>${esc(agent.tier)} · <strong>${esc(agent.role)}</strong> — ${esc(agent.mission)}${agent.reportsTo ? ` <span class="tag">보고: ${esc(agent.reportsTo)}</span>` : ""}</li>`)
     .join("");
 
   // Opinions summary
@@ -379,6 +391,12 @@ ${(d.updatedPriorities || []).map((p) => `• ${esc(p)}`).join("\n")}
         <div class="result-box-title"><i class="fas fa-project-diagram"></i> 핵심 동작 흐름</div>
         <ul>${coreFlowsHtml || "<li>분석 결과 없음</li>"}</ul>
       </div>
+    </div>
+
+    <div class="result-box" style="margin-bottom: 16px;">
+      <div class="result-box-title"><i class="fas fa-sitemap"></i> 운영 계층 구조 (${hierarchy.length}명)</div>
+      <ul>${hierarchyHtml || "<li>운영 계층 정보가 없습니다.</li>"}</ul>
+      ${hierarchy.length > 24 ? `<p class="muted">...외 ${hierarchy.length - 24}명</p>` : ""}
     </div>
 
     <div class="result-box" style="margin-bottom: 16px;">
