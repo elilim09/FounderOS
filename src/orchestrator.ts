@@ -2,7 +2,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { generateJson, generateText } from "./openaiClient.js";
-import { AgentDebate, AgentOpinion, AgentRole, BuildResult, DesignResult, DesignProgress, SystemBlueprint, UserIdeaInput } from "./types.js";
+import { AgentDebate, AgentOpinion, AgentRole, BuildResult, DesignResult, DesignProgress, SystemBlueprint, UserIdeaInput, WorkshopApproval, WorkshopEvent, WorkshopState, WorkshopTask } from "./types.js";
 
 const ROLE_POOL: AgentRole[] = [
   "MarketAnalyst",
@@ -244,4 +244,162 @@ export async function buildFromDesign(design: DesignResult): Promise<BuildResult
     outputDirectory,
     agentPrompts: prompts
   };
+}
+
+
+function seedWorkshopTasks(design: DesignResult): WorkshopTask[] {
+  const roles = design.opinions.map((opinion) => opinion.role);
+  return [
+    {
+      id: randomUUID(),
+      title: "핵심 사용자 여정 가설 정교화",
+      owner: roles[0] ?? "ProductStrategist",
+      status: "queued",
+      critical: false,
+      notes: "설계 산출물 기반으로 자동 세분화"
+    },
+    {
+      id: randomUUID(),
+      title: "결제/개인정보 처리 정책 최종 확정",
+      owner: roles[1] ?? roles[0] ?? "OperationsDesigner",
+      status: "queued",
+      critical: true,
+      notes: "법적/신뢰 이슈가 있어 사용자 승인 필요"
+    },
+    {
+      id: randomUUID(),
+      title: "MVP 기술 스택 배포 파이프라인 점검",
+      owner: roles[2] ?? roles[0] ?? "TechArchitect",
+      status: "queued",
+      critical: false,
+      notes: "멀티 에이전트 자동 실행 가능"
+    },
+    {
+      id: randomUUID(),
+      title: "초기 유료화 실험 정책 확정",
+      owner: roles[3] ?? roles[0] ?? "GrowthPlanner",
+      status: "queued",
+      critical: true,
+      notes: "가격/브랜드 영향이 커서 승인 게이트 필요"
+    }
+  ];
+}
+
+export function createWorkshopFromBuild(design: DesignResult): WorkshopState {
+  const now = new Date().toISOString();
+  const tasks = seedWorkshopTasks(design);
+  return {
+    designId: design.designId,
+    startupName: design.input.startupName,
+    status: "idle",
+    cycle: 0,
+    tasks,
+    pendingApprovals: [],
+    events: [
+      {
+        id: randomUUID(),
+        timestamp: now,
+        role: "Facilitator",
+        type: "auto_progress",
+        message: "가상 작업실이 초기화되었습니다. 자동 실행 준비 완료."
+      }
+    ],
+    summary: "가상 작업실 준비 완료",
+    createdAt: now,
+    updatedAt: now
+  };
+}
+
+function updateSummary(tasks: WorkshopTask[], pendingApprovals: WorkshopApproval[]): string {
+  const done = tasks.filter((task) => task.status === "done").length;
+  const blocked = tasks.filter((task) => task.status === "blocked").length;
+  return `완료 ${done}/${tasks.length} · 차단 ${blocked} · 승인대기 ${pendingApprovals.length}`;
+}
+
+export function runWorkshopCycle(workshop: WorkshopState): WorkshopState {
+  const next: WorkshopState = JSON.parse(JSON.stringify(workshop));
+  const now = new Date().toISOString();
+  next.cycle += 1;
+  next.status = "running";
+
+  for (const task of next.tasks) {
+    if (task.status === "done" || task.status === "blocked") continue;
+
+    if (task.critical) {
+      const existing = next.pendingApprovals.find((approval) => approval.taskId === task.id && approval.status === "pending");
+      if (!existing) {
+        const approval: WorkshopApproval = {
+          id: randomUUID(),
+          taskId: task.id,
+          role: task.owner,
+          reason: `중요 사안 '${task.title}' 진행 전 사용자 확인 필요`,
+          status: "pending",
+          requestedAt: now
+        };
+        next.pendingApprovals.push(approval);
+        task.status = "blocked";
+        next.events.unshift({
+          id: randomUUID(),
+          timestamp: now,
+          role: task.owner,
+          type: "approval_requested",
+          message: `승인 요청: ${task.title}`
+        });
+      }
+      continue;
+    }
+
+    task.status = task.status === "queued" ? "in_progress" : "done";
+    next.events.unshift({
+      id: randomUUID(),
+      timestamp: now,
+      role: task.owner,
+      type: "auto_progress",
+      message: `${task.title} → ${task.status === "in_progress" ? "자동 실행 시작" : "자동 완료"}`
+    });
+  }
+
+  if (next.tasks.every((task) => task.status === "done" || task.status === "blocked")) {
+    next.status = next.pendingApprovals.length ? "paused" : "completed";
+  }
+
+  next.summary = updateSummary(next.tasks, next.pendingApprovals);
+  next.updatedAt = now;
+  return next;
+}
+
+export function resolveWorkshopApproval(
+  workshop: WorkshopState,
+  approvalId: string,
+  decision: "approved" | "rejected"
+): WorkshopState {
+  const next: WorkshopState = JSON.parse(JSON.stringify(workshop));
+  const now = new Date().toISOString();
+  const approval = next.pendingApprovals.find((item) => item.id === approvalId);
+
+  if (!approval || approval.status !== "pending") {
+    return next;
+  }
+
+  approval.status = decision;
+  approval.resolvedAt = now;
+
+  const task = next.tasks.find((item) => item.id === approval.taskId);
+  if (task) {
+    task.status = decision === "approved" ? "queued" : "blocked";
+  }
+
+  next.events.unshift({
+    id: randomUUID(),
+    timestamp: now,
+    role: "Facilitator",
+    type: "approval_resolved",
+    message: `${task?.title ?? "작업"} 승인 결과: ${decision === "approved" ? "승인" : "반려"}`
+  });
+
+  next.pendingApprovals = next.pendingApprovals.filter((item) => item.status === "pending");
+  next.status = decision === "approved" ? "running" : "paused";
+  next.summary = updateSummary(next.tasks, next.pendingApprovals);
+  next.updatedAt = now;
+  return next;
 }

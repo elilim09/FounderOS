@@ -49,6 +49,9 @@ npm run dev
 | `POST` | `/api/build/:designId` | 설계 기반 구축 실행 |
 | `GET` | `/api/design/:designId` | 설계 결과 조회 |
 | `GET` | `/api/build/:designId` | 구축 결과 조회 |
+| `GET` | `/api/workshop/:designId` | 가상 작업실 상태 조회 |
+| `POST` | `/api/workshop/:designId/cycle` | 멀티 에이전트 자동 작업 사이클 실행 |
+| `POST` | `/api/workshop/:designId/approval/:approvalId` | 중요 사안 사용자 승인/반려 처리 |
 | `POST` | `/api/chat/:designId` | AI 전문가와 대화 |
 
 ## 주요 개선 사항
@@ -59,6 +62,7 @@ npm run dev
 - **친절한 메시지**: 오류 발생 시 기술 코드 대신 이해하기 쉬운 안내 제공
 - **설계 결과 대시보드**: JSON 대신 시스템 구조, 핵심 흐름, 리스크를 카드로 정리
 - **채팅 인터페이스**: 구축 후 AI 전문가에게 직접 질문/지시 가능
+- **가상 작업실 시뮬레이터**: 구축 완료 직후 멀티 에이전트 자동 실행 + 중요 사안 사용자 승인 게이트 제공
 
 ## 알려진 한계
 - 결과물은 텍스트 중심이며, 시각적 타임라인/칸반 형태 UI는 추후 개발 예정

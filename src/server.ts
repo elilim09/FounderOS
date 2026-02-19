@@ -4,8 +4,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { z } from "zod";
 import { OPENAI_MODEL, generateText } from "./openaiClient.js";
-import { buildFromDesign, designMultiAgentSystem } from "./orchestrator.js";
-import { getBuild, getDesign, saveBuild, saveDesign } from "./store.js";
+import { buildFromDesign, createWorkshopFromBuild, designMultiAgentSystem, resolveWorkshopApproval, runWorkshopCycle } from "./orchestrator.js";
+import { getBuild, getDesign, getWorkshop, saveBuild, saveDesign, saveWorkshop } from "./store.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -13,6 +13,11 @@ const __dirname = path.dirname(__filename);
 const app = express();
 app.use(express.json({ limit: "1mb" }));
 app.use(express.static(path.join(__dirname, "../public")));
+
+
+const approvalDecisionSchema = z.object({
+  decision: z.enum(["approved", "rejected"])
+});
 
 const designInputSchema = z.object({
   startupName: z.string().min(1),
@@ -71,6 +76,8 @@ app.post("/api/build/:designId", async (req, res) => {
   try {
     const build = await buildFromDesign(design);
     saveBuild(build);
+    const workshop = createWorkshopFromBuild(design);
+    saveWorkshop(workshop);
     return res.json(build);
   } catch (error) {
     const message = error instanceof Error ? error.message : "구축 중 문제가 발생했습니다. 다시 시도해주세요.";
@@ -93,6 +100,43 @@ app.get("/api/build/:designId", (req, res) => {
     return res.status(404).json({ error: "해당 구축 결과를 찾을 수 없습니다." });
   }
   return res.json(build);
+});
+
+
+
+app.get("/api/workshop/:designId", (req, res) => {
+  const workshop = getWorkshop(req.params.designId);
+  if (!workshop) {
+    return res.status(404).json({ error: "가상 작업실 데이터를 찾을 수 없습니다." });
+  }
+  return res.json(workshop);
+});
+
+app.post("/api/workshop/:designId/cycle", (req, res) => {
+  const workshop = getWorkshop(req.params.designId);
+  if (!workshop) {
+    return res.status(404).json({ error: "가상 작업실 데이터를 찾을 수 없습니다." });
+  }
+
+  const updated = runWorkshopCycle(workshop);
+  saveWorkshop(updated);
+  return res.json(updated);
+});
+
+app.post("/api/workshop/:designId/approval/:approvalId", (req, res) => {
+  const workshop = getWorkshop(req.params.designId);
+  if (!workshop) {
+    return res.status(404).json({ error: "가상 작업실 데이터를 찾을 수 없습니다." });
+  }
+
+  const parsed = approvalDecisionSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: "승인 결정값이 올바르지 않습니다." });
+  }
+
+  const updated = resolveWorkshopApproval(workshop, req.params.approvalId, parsed.data.decision);
+  saveWorkshop(updated);
+  return res.json(updated);
 });
 
 app.post("/api/chat/:designId", async (req, res) => {

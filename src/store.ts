@@ -1,7 +1,9 @@
-import { BuildResult, DesignResult } from "./types.js";
+import { BuildResult, DesignResult, WorkshopState } from "./types.js";
 
 const designs = new Map<string, DesignResult>();
 const builds = new Map<string, BuildResult>();
+
+const workshops = new Map<string, WorkshopState>();
 
 export function saveDesign(design: DesignResult): void {
   designs.set(design.designId, design);
@@ -17,4 +19,13 @@ export function saveBuild(build: BuildResult): void {
 
 export function getBuild(designId: string): BuildResult | undefined {
   return builds.get(designId);
+}
+
+
+export function saveWorkshop(workshop: WorkshopState): void {
+  workshops.set(workshop.designId, workshop);
+}
+
+export function getWorkshop(designId: string): WorkshopState | undefined {
+  return workshops.get(designId);
 }

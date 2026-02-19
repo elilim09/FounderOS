@@ -25,10 +25,12 @@ const defaultState = {
 
 let context = loadContext();
 let state = loadState();
+let workshop = null;
 
 hydrateBuildDefaults();
 renderAll();
 wireEvents();
+initWorkshop();
 
 function loadContext() {
   try {
@@ -80,6 +82,93 @@ function hydrateBuildDefaults() {
     }];
   }
   saveState();
+}
+
+async function initWorkshop() {
+  if (!context.designId) return;
+  try {
+    const res = await fetch(`/api/workshop/${context.designId}`);
+    if (!res.ok) return;
+    workshop = await res.json();
+    renderWorkshop();
+  } catch {
+    // ignore network errors in static preview
+  }
+}
+
+async function runWorkshopCycle() {
+  if (!context.designId) return;
+  try {
+    const res = await fetch(`/api/workshop/${context.designId}/cycle`, { method: "POST" });
+    if (!res.ok) return;
+    workshop = await res.json();
+    renderWorkshop();
+  } catch {
+    // noop
+  }
+}
+
+async function resolveApproval(approvalId, decision) {
+  if (!context.designId) return;
+  try {
+    const res = await fetch(`/api/workshop/${context.designId}/approval/${approvalId}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ decision }),
+    });
+    if (!res.ok) return;
+    workshop = await res.json();
+    renderWorkshop();
+  } catch {
+    // noop
+  }
+}
+
+function renderWorkshop() {
+  const summaryEl = $("workshopSummary");
+  const taskEl = $("workshopTaskList");
+  const queueEl = $("approvalQueue");
+  const eventEl = $("workshopEvents");
+  if (!summaryEl || !taskEl || !queueEl || !eventEl) return;
+
+  if (!workshop) {
+    summaryEl.textContent = "가상 작업실 데이터를 찾을 수 없습니다. 먼저 설계/구축을 완료하세요.";
+    taskEl.innerHTML = '<p class="muted">작업 없음</p>';
+    queueEl.innerHTML = '<p class="muted">승인 대기 없음</p>';
+    eventEl.innerHTML = '<p class="muted">이벤트 없음</p>';
+    return;
+  }
+
+  summaryEl.textContent = `상태: ${workshop.status} · 사이클 ${workshop.cycle}회 · ${workshop.summary}`;
+
+  taskEl.innerHTML = (workshop.tasks || []).map((task) => `
+    <div class="item">
+      <div>
+        <strong>${escapeHtml(task.title)}</strong>
+        <div class="muted">담당: ${escapeHtml(roleName(task.owner))} · ${task.critical ? "중요 승인 필요" : "자동 실행"}</div>
+      </div>
+      <span class="pill ${mapHandoffState(task.status === "queued" ? "pending" : task.status === "in_progress" ? "in_progress" : task.status === "done" ? "done" : "blocked")}">${escapeHtml(task.status)}</span>
+    </div>
+  `).join("") || '<p class="muted">작업 없음</p>';
+
+  queueEl.innerHTML = (workshop.pendingApprovals || []).map((approval) => `
+    <div class="item" style="display:block;">
+      <strong>${escapeHtml(approval.reason)}</strong>
+      <div class="muted" style="margin:6px 0;">요청: ${escapeHtml(approval.requestedAt)}</div>
+      <div class="row">
+        <button class="btn" data-approve-id="${approval.id}">승인</button>
+        <button class="btn warn" data-reject-id="${approval.id}">반려</button>
+      </div>
+    </div>
+  `).join("") || '<p class="muted">중요 사안 승인 대기 없음 (에이전트 자동 진행 중)</p>';
+
+  eventEl.innerHTML = (workshop.events || []).slice(0, 20).map((event) => `
+    <div class="item" style="display:block;">
+      <strong>${escapeHtml(roleName(event.role))}</strong>
+      <div class="muted">${escapeHtml(event.timestamp)} · ${escapeHtml(event.type)}</div>
+      <div>${escapeHtml(event.message)}</div>
+    </div>
+  `).join("") || '<p class="muted">이벤트 없음</p>';
 }
 
 function wireEvents() {
@@ -156,6 +245,10 @@ function wireEvents() {
     saveAndRender();
   });
 
+  $("runWorkshopCycle")?.addEventListener("click", () => {
+    runWorkshopCycle();
+  });
+
   $("exportStudio").addEventListener("click", () => {
     const snapshot = {
       exportedAt: new Date().toISOString(),
@@ -188,6 +281,16 @@ function wireEvents() {
       if (!id) continue;
       state[store] = state[store].filter((entry) => entry.id !== id);
       saveAndRender();
+      return;
+    }
+
+    if (button.dataset.approveId) {
+      resolveApproval(button.dataset.approveId, "approved");
+      return;
+    }
+
+    if (button.dataset.rejectId) {
+      resolveApproval(button.dataset.rejectId, "rejected");
       return;
     }
   });

@@ -228,6 +228,29 @@
         <div id="interviewList" class="list"></div>
       </section>
 
+
+      <section class="card full">
+        <h2><i class="fas fa-flask-vial"></i>가상 작업실 시뮬레이터</h2>
+        <div class="row" style="margin-bottom:10px;">
+          <button id="runWorkshopCycle" class="btn primary">자동 사이클 실행</button>
+          <div id="workshopSummary" class="muted">구축 완료 후 자동 실행 가능한 멀티 에이전트 상태를 불러옵니다.</div>
+        </div>
+        <div class="grid" style="margin-top:0;">
+          <div class="card half" style="padding:10px;">
+            <h2><i class="fas fa-list"></i>자동 실행 작업</h2>
+            <div id="workshopTaskList" class="list"></div>
+          </div>
+          <div class="card half" style="padding:10px;">
+            <h2><i class="fas fa-user-shield"></i>사용자 승인 대기</h2>
+            <div id="approvalQueue" class="list"></div>
+          </div>
+        </div>
+        <details style="margin-top:8px;">
+          <summary>실행 이벤트 로그</summary>
+          <div id="workshopEvents" class="list" style="margin-top:8px;"></div>
+        </details>
+      </section>
+
       <section class="card half">
         <h2><i class="fas fa-file-lines"></i>구축 결과 기반 운영 Runbook</h2>
         <details open>

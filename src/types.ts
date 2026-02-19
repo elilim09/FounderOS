@@ -58,6 +58,48 @@ export interface BuildResult {
   agentPrompts: Record<string, string>;
 }
 
+export type WorkshopTaskStatus = "queued" | "in_progress" | "done" | "blocked";
+
+export interface WorkshopTask {
+  id: string;
+  title: string;
+  owner: AgentRole;
+  status: WorkshopTaskStatus;
+  critical: boolean;
+  notes: string;
+}
+
+export interface WorkshopApproval {
+  id: string;
+  taskId: string;
+  role: AgentRole;
+  reason: string;
+  status: "pending" | "approved" | "rejected";
+  requestedAt: string;
+  resolvedAt?: string;
+}
+
+export interface WorkshopEvent {
+  id: string;
+  timestamp: string;
+  role: AgentRole | "Facilitator";
+  type: "auto_progress" | "approval_requested" | "approval_resolved" | "blocked";
+  message: string;
+}
+
+export interface WorkshopState {
+  designId: string;
+  startupName: string;
+  status: "idle" | "running" | "paused" | "completed";
+  cycle: number;
+  tasks: WorkshopTask[];
+  pendingApprovals: WorkshopApproval[];
+  events: WorkshopEvent[];
+  summary: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export type DesignProgress =
   | { type: "step"; message: string }
   | { type: "log"; role?: AgentRole; content: string }
